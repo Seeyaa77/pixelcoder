@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { X, Shield, Sword, Heart, Sparkles, Coins, ShoppingBag } from 'lucide-react';
+import React from 'react';
+import { X, Shield, Sword, Heart, Sparkles, ShoppingBag } from 'lucide-react';
+import { PixelCoinIcon } from './Icons';
 
 export default function InventoryModal({
   isOpen,
@@ -8,8 +9,7 @@ export default function InventoryModal({
   onEquipWeapon,
   onEquipArmor,
   onUsePotion,
-  onBuyPotion,
-  onBuyItem
+  onBuyPotion
 }) {
   if (!isOpen) return null;
 
@@ -47,7 +47,7 @@ export default function InventoryModal({
 
           <div className="flex items-center gap-3">
             <div className="px-3 py-1 bg-[#FEF08A] text-[#854D0E] font-mono font-bold text-xs border-2 border-[#1E2522] flex items-center gap-1.5">
-              <span>🪙</span>
+              <PixelCoinIcon className="w-4 h-4" />
               <span>{playerState.gold} Gold</span>
             </div>
             <button 
@@ -83,9 +83,11 @@ export default function InventoryModal({
               <button
                 onClick={onBuyPotion}
                 disabled={playerState.gold < 50}
-                className="neo-button text-xs py-1.5 px-3 bg-[#F59E0B] text-black hover:bg-[#D97706]"
+                className="neo-button text-xs py-1.5 px-3 bg-[#F59E0B] text-black hover:bg-[#D97706] flex items-center gap-1"
               >
-                Buy (50🪙)
+                <span>Buy</span>
+                <PixelCoinIcon className="w-3.5 h-3.5" />
+                <span>50</span>
               </button>
             </div>
           </div>
@@ -120,9 +122,11 @@ export default function InventoryModal({
                     ) : (
                       <button
                         onClick={() => onEquipWeapon(w)}
-                        className="neo-button text-[11px] py-1 px-2.5 bg-white text-[#1E2522] hover:bg-gray-100"
+                        className="neo-button text-[11px] py-1 px-2.5 bg-white text-[#1E2522] hover:bg-gray-100 flex items-center gap-1"
                       >
-                        Equip ({w.cost}🪙)
+                        <span>Equip</span>
+                        <PixelCoinIcon className="w-3 h-3" />
+                        <span>{w.cost}</span>
                       </button>
                     )}
                   </div>
@@ -161,9 +165,11 @@ export default function InventoryModal({
                     ) : (
                       <button
                         onClick={() => onEquipArmor(a)}
-                        className="neo-button text-[11px] py-1 px-2.5 bg-white text-[#1E2522] hover:bg-gray-100"
+                        className="neo-button text-[11px] py-1 px-2.5 bg-white text-[#1E2522] hover:bg-gray-100 flex items-center gap-1"
                       >
-                        Equip ({a.cost}🪙)
+                        <span>Equip</span>
+                        <PixelCoinIcon className="w-3 h-3" />
+                        <span>{a.cost}</span>
                       </button>
                     )}
                   </div>
@@ -177,7 +183,7 @@ export default function InventoryModal({
         {/* Footer */}
         <div className="bg-[#F3F6F4] p-3 border-t-3 border-[#1E2522] flex items-center justify-between font-mono text-xs">
           <span className="text-gray-600">
-            Current Stats: {playerState.hp}/{playerState.max_hp} HP • {playerState.armor} Armor
+            Current Stats: {playerState.hp}/{playerState.max_hp} HP • {playerState.armor} Defense
           </span>
           <button
             onClick={onClose}

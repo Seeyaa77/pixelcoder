@@ -10,18 +10,21 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   }
 })
 
-const STORAGE_KEY = 'pixelcoder_session_v2'
+const STORAGE_KEY = 'pixelcoder_session_v3'
 
 export const getStoredSession = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return parsed
+    }
   } catch (e) {
     console.warn('Storage read failed:', e)
   }
   return {
     isLoggedIn: false,
-    username: 'Guest_Knight',
+    username: '',
     email: '',
     role: 'user',
     total_xp: 0,
@@ -49,48 +52,59 @@ export const saveStoredSession = (data) => {
   }
 }
 
-// Fetch live leaderboard directly from Supabase
+export const clearStoredSession = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEY)
+  } catch (e) {
+    console.warn('Storage clear failed:', e)
+  }
+}
+
+// Fetch live real users from Supabase leaderboard
 export const fetchLiveLeaderboard = async () => {
   try {
     const { data, error } = await supabase
       .from('pixelcoder_profiles')
       .select('id, username, total_xp, current_streak, weapon_name, armor, role')
       .order('total_xp', { ascending: false })
-      .limit(20)
+      .limit(50)
 
     if (error) {
       console.warn('Supabase leaderboard fetch warning:', error.message)
-      return null
+      return []
     }
-    return data
+    return data || []
   } catch (err) {
     console.warn('Network error fetching leaderboard:', err)
-    return null
+    return []
   }
 }
 
-// Register user to live Supabase backend
+// Register new real player in Supabase
 export const registerUserBackend = async (username, email, password) => {
   try {
     const cleanUsername = username.trim()
     const cleanEmail = email.trim().toLowerCase()
 
-    // Check if username already exists
+    // Check if username or email already exists
     const { data: existing } = await supabase
       .from('pixelcoder_profiles')
-      .select('id')
-      .eq('username', cleanUsername)
+      .select('id, username, email')
+      .or(`username.eq.${cleanUsername},email.eq.${cleanEmail}`)
       .maybeSingle()
 
     if (existing) {
-      return { success: false, error: 'Username already taken. Please pick another!' }
+      if (existing.username.toLowerCase() === cleanUsername.toLowerCase()) {
+        return { success: false, error: 'Username already taken. Please choose another!' }
+      }
+      return { success: false, error: 'Email already registered. Try logging in!' }
     }
 
     const newProfile = {
       username: cleanUsername,
       email: cleanEmail,
-      password_hash: password, // Note: In production, hash via edge function
-      total_xp: 0,
+      password_hash: password,
+      total_xp: 100,
       current_streak: 1,
       hp: 100,
       max_hp: 100,
@@ -126,19 +140,19 @@ export const registerUserBackend = async (username, email, password) => {
   }
 }
 
-// Login user from live Supabase backend
-export const loginUserBackend = async (username, password) => {
+// Login with username OR email
+export const loginUserBackend = async (identifier, password) => {
   try {
-    const cleanUsername = username.trim()
+    const cleanIdentifier = identifier.trim()
     
     const { data, error } = await supabase
       .from('pixelcoder_profiles')
       .select('*')
-      .eq('username', cleanUsername)
+      .or(`username.eq.${cleanIdentifier},email.eq.${cleanIdentifier.toLowerCase()}`)
       .maybeSingle()
 
     if (error || !data) {
-      return { success: false, error: 'User not found. Check username or register first!' }
+      return { success: false, error: 'Account not found. Please register or check credentials!' }
     }
 
     if (data.password_hash && data.password_hash !== password) {
@@ -160,7 +174,7 @@ export const loginUserBackend = async (username, password) => {
 
 // Sync progress to Supabase
 export const syncProgressToBackend = async (userState) => {
-  if (!userState.isLoggedIn || !userState.username || userState.username.startsWith('Guest')) {
+  if (!userState?.isLoggedIn || !userState?.username) {
     return
   }
 

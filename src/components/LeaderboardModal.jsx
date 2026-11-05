@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Trophy, RefreshCw, Shield, Sparkles } from 'lucide-react';
+import { X, Trophy, RefreshCw, Shield, Sparkles, User, Medal } from 'lucide-react';
 import { fetchLiveLeaderboard } from '../lib/supabase';
 
 export default function LeaderboardModal({ isOpen, onClose, currentUsername }) {
@@ -9,16 +9,7 @@ export default function LeaderboardModal({ isOpen, onClose, currentUsername }) {
   const loadData = async () => {
     setLoading(true);
     const liveData = await fetchLiveLeaderboard();
-    if (liveData && liveData.length > 0) {
-      setLeaderboard(liveData);
-    } else {
-      // Fallback seed if network is offline
-      setLeaderboard([
-        { id: '1', username: 'Raffli', total_xp: 4500, current_streak: 14, weapon_name: 'Legendary Katana', role: 'admin' },
-        { id: '2', username: 'BitMaster_99', total_xp: 3800, current_streak: 10, weapon_name: 'Flame Katana', role: 'user' },
-        { id: '3', username: 'CyberViper', total_xp: 2950, current_streak: 7, weapon_name: 'Pixel Blade', role: 'user' },
-      ]);
-    }
+    setLeaderboard(liveData || []);
     setLoading(false);
   };
 
@@ -43,7 +34,7 @@ export default function LeaderboardModal({ isOpen, onClose, currentUsername }) {
                 Live Supabase Leaderboard
               </h2>
               <p className="text-[11px] font-mono opacity-90">
-                Connected to public.pixelcoder_profiles • Real-time DB Sync
+                Connected to public.pixelcoder_profiles • Zero Dummy Data
               </p>
             </div>
           </div>
@@ -71,13 +62,17 @@ export default function LeaderboardModal({ isOpen, onClose, currentUsername }) {
         <div className="p-4 max-h-[70vh] overflow-y-auto">
           {loading ? (
             <div className="p-8 text-center font-mono text-xs text-gray-500">
-              Querying PostgreSQL cluster on Supabase...
+              Querying live Supabase PostgreSQL database...
+            </div>
+          ) : leaderboard.length === 0 ? (
+            <div className="p-8 text-center font-mono text-xs text-gray-500">
+              No registered players yet. Register or log in to be the first!
             </div>
           ) : (
             <table className="w-full text-left border-collapse border-3 border-[#1E2522]">
               <thead>
                 <tr className="bg-[#F3F6F4] border-b-3 border-[#1E2522] font-mono text-xs uppercase text-[#1E2522]">
-                  <th className="p-2.5 border-r-2 border-[#1E2522] w-12 text-center">Rank</th>
+                  <th className="p-2.5 border-r-2 border-[#1E2522] w-14 text-center">Rank</th>
                   <th className="p-2.5 border-r-2 border-[#1E2522]">Player</th>
                   <th className="p-2.5 border-r-2 border-[#1E2522] text-center">Equipped Weapon</th>
                   <th className="p-2.5 border-r-2 border-[#1E2522] text-center">Streak</th>
@@ -94,23 +89,28 @@ export default function LeaderboardModal({ isOpen, onClose, currentUsername }) {
                       className={`${
                         isYou 
                           ? 'bg-[#FEF3C7] font-bold' 
-                          : rank <= 3 
-                            ? 'bg-[#FAFAF9]' 
+                          : rank === 1 
+                            ? 'bg-[#FEF9C3]' 
                             : 'bg-white hover:bg-[#F3F6F4]'
                       }`}
                     >
                       <td className="p-2.5 border-r-2 border-[#1E2522] text-center font-bold">
-                        {rank === 1 && '🥇'}
-                        {rank === 2 && '🥈'}
-                        {rank === 3 && '🥉'}
-                        {rank > 3 && rank}
+                        {rank === 1 ? (
+                          <span className="px-1.5 py-0.5 bg-[#F59E0B] text-black font-extrabold border border-black">#1</span>
+                        ) : rank === 2 ? (
+                          <span className="px-1.5 py-0.5 bg-gray-300 text-black font-extrabold border border-black">#2</span>
+                        ) : rank === 3 ? (
+                          <span className="px-1.5 py-0.5 bg-amber-700 text-white font-extrabold border border-black">#3</span>
+                        ) : (
+                          <span>#{rank}</span>
+                        )}
                       </td>
                       <td className="p-2.5 border-r-2 border-[#1E2522] flex items-center gap-2">
                         <span className="font-sans font-bold text-[#1E2522]">
                           {row.username}
                         </span>
                         {row.role === 'admin' && (
-                          <span className="text-[9px] bg-[#1E2522] text-white px-1 py-0.2 border border-black uppercase">
+                          <span className="text-[9px] bg-red-600 text-white px-1 py-0.2 border border-black uppercase font-mono font-bold">
                             Admin
                           </span>
                         )}
@@ -124,7 +124,7 @@ export default function LeaderboardModal({ isOpen, onClose, currentUsername }) {
                         {row.weapon_name || 'Pixel Blade'}
                       </td>
                       <td className="p-2.5 border-r-2 border-[#1E2522] text-center">
-                        🔥 {row.current_streak || 1}d
+                        {row.current_streak || 1} Days
                       </td>
                       <td className="p-2.5 text-right font-extrabold text-[#7D8D39]">
                         {(row.total_xp || 0).toLocaleString()} XP
@@ -140,7 +140,7 @@ export default function LeaderboardModal({ isOpen, onClose, currentUsername }) {
         {/* Footer */}
         <div className="bg-[#F3F6F4] p-3 border-t-3 border-[#1E2522] flex items-center justify-between font-mono text-xs">
           <span className="text-gray-600">
-            {leaderboard.length} registered players live in database
+            {leaderboard.length} verified players in database
           </span>
           <button
             onClick={onClose}

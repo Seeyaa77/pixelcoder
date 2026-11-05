@@ -2,14 +2,22 @@ import React, { useState } from 'react';
 import { X, UserPlus, LogIn, KeyRound, Mail, User, ShieldCheck, AlertCircle } from 'lucide-react';
 import { loginUserBackend, registerUserBackend } from '../lib/supabase';
 
-export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
-  const [mode, setMode] = useState('login'); // 'login' | 'register'
+export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode = 'login' }) {
+  const [mode, setMode] = useState(initialMode);
+  const [identifier, setIdentifier] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Sync mode with prop when opened
+  React.useEffect(() => {
+    setMode(initialMode);
+    setErrorMsg('');
+    setSuccessMsg('');
+  }, [initialMode, isOpen]);
 
   if (!isOpen) return null;
 
@@ -28,30 +36,30 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
       const res = await registerUserBackend(username, email, password);
       if (res.success) {
-        setSuccessMsg('Account created successfully in Supabase! Welcome, ' + username);
-        setTimeout(() => {
-          onAuthSuccess(res.user);
-          onClose();
-        }, 1200);
-      } else {
-        setErrorMsg(res.error || 'Registration failed.');
-      }
-    } else {
-      if (!username || !password) {
-        setErrorMsg('Please enter username and password!');
-        setIsLoading(false);
-        return;
-      }
-
-      const res = await loginUserBackend(username, password);
-      if (res.success) {
-        setSuccessMsg('Logged in successfully! Welcome back, ' + username);
+        setSuccessMsg('Character registered successfully in Supabase! Welcome, ' + username);
         setTimeout(() => {
           onAuthSuccess(res.user);
           onClose();
         }, 1000);
       } else {
-        setErrorMsg(res.error || 'Login failed.');
+        setErrorMsg(res.error || 'Registration failed.');
+      }
+    } else {
+      if (!identifier || !password) {
+        setErrorMsg('Please enter username/email and password!');
+        setIsLoading(false);
+        return;
+      }
+
+      const res = await loginUserBackend(identifier, password);
+      if (res.success) {
+        setSuccessMsg('Authentication verified! Welcome back, ' + res.user.username);
+        setTimeout(() => {
+          onAuthSuccess(res.user);
+          onClose();
+        }, 800);
+      } else {
+        setErrorMsg(res.error || 'Login failed. Check your credentials.');
       }
     }
 
@@ -68,10 +76,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             <ShieldCheck className="w-6 h-6 text-[#FDE047]" />
             <div>
               <h2 className="font-extrabold text-lg uppercase tracking-tight">
-                {mode === 'login' ? 'Player Sign In' : 'Join The Guild'}
+                {mode === 'login' ? 'Player Authentication' : 'Character Registration'}
               </h2>
               <p className="text-[11px] font-mono opacity-90">
-                Live Supabase PostgreSQL Auth & Profiles
+                Connected to live PostgreSQL Supabase Auth
               </p>
             </div>
           </div>
@@ -91,7 +99,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               mode === 'login' ? 'bg-white -mb-[3px] border-b-0 text-[#1E2522]' : 'bg-gray-200 text-gray-600'
             }`}
           >
-            <LogIn className="w-3.5 h-3.5 inline mr-1" /> Login
+            <LogIn className="w-3.5 h-3.5 inline mr-1" /> Log In
           </button>
           <button
             onClick={() => { setMode('register'); setErrorMsg(''); setSuccessMsg(''); }}
@@ -120,38 +128,56 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             </div>
           )}
 
-          {/* Username */}
-          <div className="flex flex-col gap-1">
-            <label className="font-bold uppercase text-[#1E2522]">Username</label>
-            <div className="relative">
-              <User className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="e.g. PixelHero"
-                required
-                className="w-full neo-input pl-9"
-              />
-            </div>
-          </div>
-
-          {/* Email (only in register) */}
-          {mode === 'register' && (
+          {/* Identifier for Login (Username or Email) */}
+          {mode === 'login' ? (
             <div className="flex flex-col gap-1">
-              <label className="font-bold uppercase text-[#1E2522]">Email Address</label>
+              <label className="font-bold uppercase text-[#1E2522]">Username or Email</label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                <User className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="hero@quest.com"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="admin@xyntaur.com or username"
                   required
                   className="w-full neo-input pl-9"
                 />
               </div>
             </div>
+          ) : (
+            <>
+              {/* Username for Register */}
+              <div className="flex flex-col gap-1">
+                <label className="font-bold uppercase text-[#1E2522]">Username</label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="e.g. PixelHero"
+                    required
+                    className="w-full neo-input pl-9"
+                  />
+                </div>
+              </div>
+
+              {/* Email for Register */}
+              <div className="flex flex-col gap-1">
+                <label className="font-bold uppercase text-[#1E2522]">Email Address</label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-2.5" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="hero@xyntaur.com"
+                    required
+                    className="w-full neo-input pl-9"
+                  />
+                </div>
+              </div>
+            </>
           )}
 
           {/* Password */}
@@ -191,8 +217,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
             )}
           </button>
 
-          <p className="text-[11px] text-gray-500 text-center">
-            Scores, equipment, and stage progress sync automatically to the live Supabase leaderboard!
+          <p className="text-[10px] text-gray-500 text-center">
+            Zero dummy data. All scores, equipment, and levels save to public.pixelcoder_profiles!
           </p>
 
         </form>

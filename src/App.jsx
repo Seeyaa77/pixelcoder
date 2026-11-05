@@ -7,9 +7,11 @@ import LeaderboardModal from './components/LeaderboardModal';
 import AdminPanel from './components/AdminPanel';
 import AuthModal from './components/AuthModal';
 import InventoryModal from './components/InventoryModal';
+import HomePage from './components/HomePage';
 import { SYLLABUS_TRACKS } from './data/syllabus';
-import { getStoredSession, saveStoredSession, syncProgressToBackend } from './lib/supabase';
-import { Heart, Shield, Sword, ShoppingBag, Sparkles, AlertCircle } from 'lucide-react';
+import { getStoredSession, saveStoredSession, clearStoredSession, syncProgressToBackend } from './lib/supabase';
+import { Heart, Shield, Sword, ShoppingBag, Sparkles, User, LogOut } from 'lucide-react';
+import { PixelCoinIcon } from './components/Icons';
 
 export default function App() {
   const [currentTrackId, setCurrentTrackId] = useState('python');
@@ -24,6 +26,7 @@ export default function App() {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
   const [isInventoryOpen, setIsInventoryOpen] = useState(false);
 
   const currentTrack = SYLLABUS_TRACKS[currentTrackId] || SYLLABUS_TRACKS.python;
@@ -35,7 +38,9 @@ export default function App() {
   // Sync to local storage and remote Supabase
   useEffect(() => {
     saveStoredSession(playerState);
-    syncProgressToBackend(playerState);
+    if (playerState.isLoggedIn) {
+      syncProgressToBackend(playerState);
+    }
   }, [playerState]);
 
   // Reset monster HP when stage changes
@@ -83,7 +88,6 @@ export default function App() {
       const nextHp = prev.hp - incomingDmg;
 
       if (nextHp <= 0) {
-        // Emergency Revive if player knocked out
         return {
           ...prev,
           hp: 50,
@@ -127,8 +131,7 @@ export default function App() {
 
   const handleEquipWeapon = (weapon) => {
     if (playerState.weapon_name === weapon.name) return;
-    const canAfford = playerState.gold >= weapon.cost;
-    if (!canAfford) {
+    if (playerState.gold < weapon.cost) {
       alert("Not enough gold to purchase this weapon!");
       return;
     }
@@ -142,8 +145,7 @@ export default function App() {
 
   const handleEquipArmor = (armor) => {
     if (playerState.armor === armor.def) return;
-    const canAfford = playerState.gold >= armor.cost;
-    if (!canAfford) {
+    if (playerState.gold < armor.cost) {
       alert("Not enough gold to purchase this armor!");
       return;
     }
@@ -155,13 +157,17 @@ export default function App() {
   };
 
   const handleAuthSuccess = (authenticatedUser) => {
-    setPlayerState(authenticatedUser);
+    setPlayerState({
+      ...authenticatedUser,
+      isLoggedIn: true
+    });
   };
 
   const handleSignOut = () => {
-    const guestState = {
+    clearStoredSession();
+    setPlayerState({
       isLoggedIn: false,
-      username: 'Guest_Knight',
+      username: '',
       email: '',
       role: 'user',
       total_xp: 0,
@@ -174,10 +180,30 @@ export default function App() {
       gold: 150,
       potions: 3,
       clearedStages: { python: [1], cpp: [1], javascript: [1] }
-    };
-    setPlayerState(guestState);
+    });
   };
 
+  const openAuthWithMode = (mode) => {
+    setAuthMode(mode);
+    setIsAuthOpen(true);
+  };
+
+  // If user is not logged in, show the Homepage!
+  if (!playerState.isLoggedIn) {
+    return (
+      <>
+        <HomePage onOpenAuth={openAuthWithMode} />
+        <AuthModal
+          isOpen={isAuthOpen}
+          initialMode={authMode}
+          onClose={() => setIsAuthOpen(false)}
+          onAuthSuccess={handleAuthSuccess}
+        />
+      </>
+    );
+  }
+
+  // If user is logged in, show the Combat Arena with cohesive compact layout!
   return (
     <div className="min-h-screen bg-[#F3F6F4] text-[#1E2522] flex flex-col font-sans">
       
@@ -189,95 +215,98 @@ export default function App() {
         onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
         onOpenAdmin={() => setIsAdminOpen(true)}
         onOpenInventory={() => setIsInventoryOpen(true)}
-        onOpenAuth={() => setIsAuthOpen(true)}
+        onOpenAuth={() => openAuthWithMode('login')}
         onSignOut={handleSignOut}
       />
 
-      {/* Main Game Arena */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
+      {/* Main Game Dashboard: 2-Column Cohesive Layout */}
+      <main className="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
         
-        {/* Banner Info */}
-        <div className="neo-box p-4 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl p-2 bg-[#F3F6F4] border-2 border-[#1E2522]">
-              {currentTrack.icon}
+        {/* Compact Level Banner */}
+        <div className="neo-box p-3 bg-white flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-base sm:text-lg uppercase tracking-tight text-[#1E2522]">
+              {currentTrack.name} Track // Stage {currentStageNumber}: {currentStage.title}
             </span>
-            <div>
-              <h1 className="font-extrabold text-xl sm:text-2xl uppercase tracking-tight text-[#1E2522]">
-                {currentTrack.name} Track: Dungeon {currentStageNumber}
-              </h1>
-              <p className="text-xs font-mono text-gray-600">
-                {currentTrack.tagline} • Monster HP: {monsterHp}/100
-              </p>
-            </div>
           </div>
 
-          <div className="flex items-center gap-2 self-start sm:self-auto font-mono text-xs">
-            {/* Quick potion shortcut */}
+          <div className="flex items-center gap-2 font-mono text-xs">
             <button
               onClick={handleUsePotion}
               disabled={playerState.potions <= 0 || playerState.hp >= playerState.max_hp}
               className="neo-button text-[11px] py-1 px-2.5 bg-[#FEE2E2] text-[#991B1B] hover:bg-[#FECACA] flex items-center gap-1"
             >
               <Heart className="w-3.5 h-3.5 fill-[#DC2626] text-[#DC2626]" />
-              <span>Use Potion (x{playerState.potions})</span>
+              <span>Potion ({playerState.potions})</span>
             </button>
 
             <button
               onClick={() => setIsInventoryOpen(true)}
               className="neo-button text-[11px] py-1 px-2.5 bg-[#FEF08A] text-[#854D0E] hover:bg-[#FDE047] flex items-center gap-1"
             >
-              <span>🪙 {playerState.gold} Gold</span>
+              <PixelCoinIcon className="w-3 h-3" />
+              <span>{playerState.gold}</span>
             </button>
           </div>
         </div>
 
-        {/* 2D Combat Canvas with Monsters & Slashes */}
-        <GameCanvas
-          currentTrack={currentTrackId}
-          stageNumber={currentStageNumber}
-          stageTitle={currentStage.title}
-          combatAction={combatAction}
-          playerHp={playerState.hp}
-          playerMaxHp={playerState.max_hp}
-          playerArmor={playerState.armor}
-          weaponName={playerState.weapon_name}
-          weaponAtk={playerState.weapon_atk}
-          monsterHp={monsterHp}
-          streak={playerState.current_streak}
-          onCombatAnimationEnd={() => setCombatAction(null)}
-        />
+        {/* 2-Column Game Arena: Left Combat & Roadmap, Right Code & Task */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+          
+          {/* Left Column (5 Cols): Combat Arena + Level Selector */}
+          <div className="lg:col-span-5 flex flex-col gap-3">
+            
+            {/* 2D Combat Canvas */}
+            <GameCanvas
+              currentTrack={currentTrackId}
+              stageNumber={currentStageNumber}
+              stageTitle={currentStage.title}
+              combatAction={combatAction}
+              playerHp={playerState.hp}
+              playerMaxHp={playerState.max_hp}
+              playerArmor={playerState.armor}
+              weaponName={playerState.weapon_name}
+              weaponAtk={playerState.weapon_atk}
+              monsterHp={monsterHp}
+              streak={playerState.current_streak}
+              onCombatAnimationEnd={() => setCombatAction(null)}
+            />
 
-        {/* Stage Roadmap Selector */}
-        <StageSelector
-          stages={currentTrack.stages}
-          currentStageNumber={currentStageNumber}
-          clearedStageNumbers={clearedStages}
-          onSelectStage={(num) => setCurrentStageNumber(num)}
-        />
+            {/* Compact Stage Roadmap Strip */}
+            <StageSelector
+              stages={currentTrack.stages}
+              currentStageNumber={currentStageNumber}
+              clearedStageNumbers={clearedStages}
+              onSelectStage={(num) => setCurrentStageNumber(num)}
+            />
 
-        {/* Interactive Theory & Code Challenge Runner */}
-        <CodePlayground
-          stage={currentStage}
-          isCleared={isCurrentStageCleared}
-          onStageClear={handleStageClear}
-          onStageFailed={handleStageFailed}
-          onNextStage={handleNextStage}
-          hasNextStage={currentStageNumber < currentTrack.stages.length}
-          onCombatTrigger={(action) => setCombatAction(action)}
-          playerHp={playerState.hp}
-        />
+          </div>
+
+          {/* Right Column (7 Cols): Theory, Task Challenge, Code Editor & Terminal */}
+          <div className="lg:col-span-7">
+            <CodePlayground
+              stage={currentStage}
+              isCleared={isCurrentStageCleared}
+              onStageClear={handleStageClear}
+              onStageFailed={handleStageFailed}
+              onNextStage={handleNextStage}
+              hasNextStage={currentStageNumber < currentTrack.stages.length}
+              onCombatTrigger={(action) => setCombatAction(action)}
+            />
+          </div>
+
+        </div>
 
       </main>
 
       {/* Footer */}
-      <footer className="mt-auto border-t-4 border-[#1E2522] bg-white p-4 font-mono text-xs text-center text-gray-600">
+      <footer className="mt-auto border-t-4 border-[#1E2522] bg-white p-3 font-mono text-xs text-center text-gray-600">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
-            PIXELCODER RPG © 2026 • Live Supabase PostgreSQL Sync • Demon & Blood Monster Arena
+            PIXELCODER RPG • Logged in as <strong>{playerState.username}</strong>
           </span>
           <span className="text-[#586526] font-bold">
-            Authoritative Battle Engine • Neobrutalism UI
+            Live Supabase Connected • Zero Dummy Data
           </span>
         </div>
       </footer>
@@ -289,13 +318,16 @@ export default function App() {
         currentUsername={playerState.username}
       />
 
-      <AdminPanel
-        isOpen={isAdminOpen}
-        onClose={() => setIsAdminOpen(false)}
-      />
+      {playerState.role === 'admin' && (
+        <AdminPanel
+          isOpen={isAdminOpen}
+          onClose={() => setIsAdminOpen(false)}
+        />
+      )}
 
       <AuthModal
         isOpen={isAuthOpen}
+        initialMode={authMode}
         onClose={() => setIsAuthOpen(false)}
         onAuthSuccess={handleAuthSuccess}
       />

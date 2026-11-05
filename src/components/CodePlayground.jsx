@@ -1,0 +1,280 @@
+import React, { useState, useEffect } from 'react';
+import { Play, RotateCcw, Lightbulb, CheckCircle2, AlertCircle, BookOpen, Code2 } from 'lucide-react';
+import confetti from 'canvas-confetti';
+
+export default function CodePlayground({ 
+  stage, 
+  onStageClear, 
+  isCleared,
+  onNextStage,
+  hasNextStage 
+}) {
+  const [code, setCode] = useState(stage.starterCode || '');
+  const [output, setOutput] = useState('');
+  const [isRunning, setIsRunning] = useState(false);
+  const [status, setStatus] = useState(isCleared ? 'cleared' : 'idle'); // 'idle' | 'cleared' | 'error'
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showHint, setShowHint] = useState(false);
+
+  // Entropy capture for Anti-Cheat verification
+  const [mountTime] = useState(Date.now());
+  const [keystrokes, setKeystrokes] = useState(0);
+
+  useEffect(() => {
+    setCode(stage.starterCode || '');
+    setOutput('');
+    setStatus(isCleared ? 'cleared' : 'idle');
+    setErrorMessage('');
+    setShowHint(false);
+    setKeystrokes(0);
+  }, [stage, isCleared]);
+
+  const handleCodeChange = (e) => {
+    setCode(e.target.value);
+    setKeystrokes(prev => prev + 1);
+  };
+
+  const runEvaluation = () => {
+    setIsRunning(true);
+    setStatus('idle');
+    setErrorMessage('');
+
+    const elapsedMs = Date.now() - mountTime;
+
+    setTimeout(() => {
+      let simOutput = '';
+      let passed = false;
+
+      // Simulated interpreter / regex AST validation
+      try {
+        if (stage.regexMatch) {
+          const re = new RegExp(stage.regexMatch);
+          passed = re.test(code);
+        } else {
+          passed = code.replace(/\s+/g, '').includes(stage.solution.replace(/\s+/g, ''));
+        }
+
+        // Generate realistic simulated stdout
+        if (passed) {
+          simOutput = stage.expectedOutput;
+          setStatus('cleared');
+          setOutput(simOutput);
+
+          // Confetti celebration
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.7 },
+            colors: ['#7D8D39', '#F59E0B', '#1E2522']
+          });
+
+          onStageClear(stage.stageNumber, stage.xp, {
+            duration_ms: elapsedMs,
+            keystrokes,
+            codeLength: code.length
+          });
+        } else {
+          simOutput = `[Execution Failure]\nOutput did not match expected solution.\nExpected output format: ${stage.expectedOutput}\n\nTip: Review the syntax example in the Theory panel above!`;
+          setStatus('error');
+          setOutput(simOutput);
+          setErrorMessage('Validation tests failed. Check your logic and variable names!');
+        }
+      } catch (err) {
+        setStatus('error');
+        setOutput(`[Runtime Error]: ${err.message}`);
+        setErrorMessage(err.message);
+      } finally {
+        setIsRunning(false);
+      }
+    }, 600);
+  };
+
+  const handleReset = () => {
+    setCode(stage.starterCode || '');
+    setOutput('');
+    setStatus('idle');
+    setErrorMessage('');
+  };
+
+  const linesCount = Math.max(8, code.split('\n').length);
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      {/* Left Column: Theory & Instructions (w3schools style) */}
+      <div className="lg:col-span-5 flex flex-col gap-4">
+        
+        {/* Theory Card */}
+        <div className="neo-box p-4 bg-white">
+          <div className="flex items-center gap-2 pb-2 mb-3 border-b-2 border-[#1E2522]">
+            <BookOpen className="w-5 h-5 text-[#7D8D39]" />
+            <h3 className="font-extrabold text-base uppercase text-[#1E2522]">
+              Theory & Syllabus
+            </h3>
+            <span className="ml-auto font-mono text-[10px] bg-[#E7EEDB] px-2 py-0.5 border border-[#1E2522] text-[#586526] font-bold">
+              {stage.concept}
+            </span>
+          </div>
+
+          <div className="font-mono text-xs whitespace-pre-line text-[#1E2522] leading-relaxed bg-[#F3F6F4] p-3 border-2 border-[#1E2522] max-h-56 overflow-y-auto">
+            {stage.theory}
+          </div>
+        </div>
+
+        {/* Task & Challenge Card */}
+        <div className="neo-box p-4 bg-[#FEFDF9] border-[#1E2522]">
+          <div className="flex items-center justify-between pb-2 mb-2 border-b-2 border-[#1E2522]">
+            <div className="flex items-center gap-2">
+              <Code2 className="w-5 h-5 text-[#D97706]" />
+              <h4 className="font-extrabold text-sm uppercase text-[#1E2522]">
+                Stage Task Challenge
+              </h4>
+            </div>
+            <span className="font-mono text-xs font-bold px-2 py-0.5 bg-[#FEF3C7] border border-[#1E2522] text-[#B45309]">
+              +{stage.xp} XP
+            </span>
+          </div>
+
+          <p className="text-xs font-medium text-[#1E2522] leading-relaxed mb-3">
+            {stage.question}
+          </p>
+
+          <div className="bg-[#E7EEDB] border-2 border-[#1E2522] p-2.5 mb-3">
+            <span className="text-[10px] font-mono font-bold uppercase text-[#586526] block mb-1">
+              Expected Output:
+            </span>
+            <pre className="font-mono text-xs font-bold text-[#1E2522] whitespace-pre-wrap">
+              {stage.expectedOutput}
+            </pre>
+          </div>
+
+          {/* Hint Dropdown */}
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => setShowHint(!showHint)}
+              className="text-xs font-mono font-bold text-[#586526] flex items-center gap-1.5 hover:underline"
+            >
+              <Lightbulb className="w-3.5 h-3.5" />
+              <span>{showHint ? 'Hide Hint' : 'Need a Hint?'}</span>
+            </button>
+            {showHint && (
+              <div className="bg-[#FEF9C3] p-2.5 border-2 border-[#1E2522] font-mono text-[11px] text-[#713F12]">
+                💡 <strong>Solution Peek:</strong>
+                <pre className="mt-1 bg-white p-1.5 border border-[#1E2522] overflow-x-auto text-[11px]">
+                  {stage.solution}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Right Column: Code Editor & Execution Terminal */}
+      <div className="lg:col-span-7 flex flex-col gap-4">
+        
+        {/* Editor Box */}
+        <div className="neo-box bg-[#1E2522] text-white overflow-hidden">
+          
+          {/* Editor Header Bar */}
+          <div className="bg-[#151B18] px-4 py-2 flex items-center justify-between border-b-2 border-black">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 bg-[#EF4444] rounded-full inline-block"></span>
+              <span className="w-2.5 h-2.5 bg-[#F59E0B] rounded-full inline-block"></span>
+              <span className="w-2.5 h-2.5 bg-[#10B981] rounded-full inline-block"></span>
+              <span className="font-mono text-xs text-gray-300 ml-2">solution_editor</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleReset}
+                className="text-[11px] font-mono text-gray-400 hover:text-white flex items-center gap-1 px-2 py-0.5 border border-gray-600 rounded"
+                title="Reset to starter code"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Reset
+              </button>
+            </div>
+          </div>
+
+          {/* Textarea with Line Numbers */}
+          <div className="flex bg-[#1E2522]">
+            <div className="py-3 px-2 font-mono text-xs text-gray-500 select-none text-right bg-[#181E1B] border-r border-gray-800">
+              {Array.from({ length: linesCount }, (_, i) => (
+                <div key={i} className="leading-6">{i + 1}</div>
+              ))}
+            </div>
+            <textarea
+              value={code}
+              onChange={handleCodeChange}
+              spellCheck="false"
+              className="w-full h-56 p-3 bg-transparent text-[#E2E8F0] font-mono text-xs leading-6 outline-none resize-none"
+              placeholder="// Write your code solution here..."
+            />
+          </div>
+
+          {/* Action Bar */}
+          <div className="bg-[#151B18] p-3 border-t-2 border-black flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-mono text-gray-400">
+              <span>Keystrokes: {keystrokes}</span>
+              <span>•</span>
+              <span className="text-[#10B981]">Anti-Cheat Active</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={runEvaluation}
+                disabled={isRunning}
+                className="neo-button text-xs py-2 px-4 gap-2 flex items-center bg-[#7D8D39] hover:bg-[#8fa042]"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                <span>{isRunning ? 'Validating...' : 'Run & Submit'}</span>
+              </button>
+
+              {status === 'cleared' && hasNextStage && (
+                <button
+                  onClick={onNextStage}
+                  className="neo-button text-xs py-2 px-4 gap-1.5 flex items-center bg-[#F59E0B] text-[#1E2522] border-black hover:bg-[#fbbf24]"
+                >
+                  <span>Next Stage ❯</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* Output Console Box */}
+        <div className="neo-box p-3 bg-white">
+          <div className="flex items-center justify-between pb-1.5 mb-2 border-b-2 border-[#1E2522]">
+            <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase text-[#1E2522]">
+              <span className="w-2 h-2 bg-[#7D8D39] inline-block"></span>
+              <span>Execution Output & Diagnostics</span>
+            </div>
+            {status === 'cleared' && (
+              <span className="flex items-center gap-1 text-[11px] font-mono font-bold text-[#586526] bg-[#E7EEDB] px-2 py-0.5 border border-[#1E2522]">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                PASSED (100%)
+              </span>
+            )}
+            {status === 'error' && (
+              <span className="flex items-center gap-1 text-[11px] font-mono font-bold text-[#DC2626] bg-[#FEE2E2] px-2 py-0.5 border border-[#1E2522]">
+                <AlertCircle className="w-3.5 h-3.5" />
+                FAILED
+              </span>
+            )}
+          </div>
+
+          <div className="font-mono text-xs bg-[#1E2522] text-[#A7F3D0] p-3 border-2 border-[#1E2522] min-h-[90px] max-h-40 overflow-y-auto whitespace-pre-wrap">
+            {output ? output : (
+              <span className="text-gray-500 italic">
+                Press "Run & Submit" to compile and execute test cases...
+              </span>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  );
+}

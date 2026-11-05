@@ -138,7 +138,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="admin@xyntaur.com or username"
+                  placeholder="Username or email"
                   required
                   className="w-full neo-input pl-9"
                 />
@@ -171,7 +171,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="hero@xyntaur.com"
+                    placeholder="hero@quest.com"
                     required
                     className="w-full neo-input pl-9"
                   />

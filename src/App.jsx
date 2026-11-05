@@ -10,7 +10,7 @@ import InventoryModal from './components/InventoryModal';
 import HomePage from './components/HomePage';
 import { SYLLABUS_TRACKS } from './data/syllabus';
 import { getStoredSession, saveStoredSession, clearStoredSession, syncProgressToBackend } from './lib/supabase';
-import { Heart, Shield, Sword, ShoppingBag, Sparkles, User, LogOut } from 'lucide-react';
+import { Heart, Sword, Sparkles, User, LogOut } from 'lucide-react';
 import { PixelCoinIcon } from './components/Icons';
 
 export default function App() {
@@ -84,7 +84,7 @@ export default function App() {
 
   const handleStageFailed = () => {
     setPlayerState(prev => {
-      const incomingDmg = Math.max(8, 22 - Math.floor(prev.armor / 3));
+      const incomingDmg = 15;
       const nextHp = prev.hp - incomingDmg;
 
       if (nextHp <= 0) {
@@ -132,7 +132,7 @@ export default function App() {
   const handleEquipWeapon = (weapon) => {
     if (playerState.weapon_name === weapon.name) return;
     if (playerState.gold < weapon.cost) {
-      alert("Not enough gold to purchase this weapon!");
+      alert("Not enough gold to acquire this weapon!");
       return;
     }
     setPlayerState(prev => ({
@@ -143,16 +143,10 @@ export default function App() {
     }));
   };
 
-  const handleEquipArmor = (armor) => {
-    if (playerState.armor === armor.def) return;
-    if (playerState.gold < armor.cost) {
-      alert("Not enough gold to purchase this armor!");
-      return;
-    }
+  const handleSelectCharacter = (charName) => {
     setPlayerState(prev => ({
       ...prev,
-      gold: prev.gold - armor.cost,
-      armor: armor.def
+      character_name: charName
     }));
   };
 
@@ -174,8 +168,8 @@ export default function App() {
       current_streak: 1,
       hp: 100,
       max_hp: 100,
-      armor: 20,
-      weapon_name: 'Pixel Blade',
+      character_name: 'Royal Soldier',
+      weapon_name: 'Steel Sword',
       weapon_atk: 25,
       gold: 150,
       potions: 3,
@@ -188,7 +182,7 @@ export default function App() {
     setIsAuthOpen(true);
   };
 
-  // If user is not logged in, show the Homepage!
+  // If user is not logged in, render the Homepage!
   if (!playerState.isLoggedIn) {
     return (
       <>
@@ -203,7 +197,7 @@ export default function App() {
     );
   }
 
-  // If user is logged in, show the Combat Arena with cohesive compact layout!
+  // If user is logged in, show the Combat Arena dashboard
   return (
     <div className="min-h-screen bg-[#F3F6F4] text-[#1E2522] flex flex-col font-sans">
       
@@ -219,13 +213,13 @@ export default function App() {
         onSignOut={handleSignOut}
       />
 
-      {/* Main Game Dashboard: 2-Column Cohesive Layout */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-4">
+      {/* Main Dashboard Layout */}
+      <main className="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-3">
         
         {/* Compact Level Banner */}
-        <div className="neo-box p-3 bg-white flex flex-wrap items-center justify-between gap-3">
+        <div className="neo-box p-2.5 bg-white flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-extrabold text-base sm:text-lg uppercase tracking-tight text-[#1E2522]">
+            <span className="font-extrabold text-sm sm:text-base uppercase tracking-tight text-[#1E2522]">
               {currentTrack.name} Track // Stage {currentStageNumber}: {currentStage.title}
             </span>
           </div>
@@ -234,7 +228,7 @@ export default function App() {
             <button
               onClick={handleUsePotion}
               disabled={playerState.potions <= 0 || playerState.hp >= playerState.max_hp}
-              className="neo-button text-[11px] py-1 px-2.5 bg-[#FEE2E2] text-[#991B1B] hover:bg-[#FECACA] flex items-center gap-1"
+              className="neo-button text-[11px] py-1 px-2 bg-[#FEE2E2] text-[#991B1B] hover:bg-[#FECACA] flex items-center gap-1"
             >
               <Heart className="w-3.5 h-3.5 fill-[#DC2626] text-[#DC2626]" />
               <span>Potion ({playerState.potions})</span>
@@ -250,13 +244,13 @@ export default function App() {
           </div>
         </div>
 
-        {/* 2-Column Game Arena: Left Combat & Roadmap, Right Code & Task */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+        {/* 2-Column Game Arena: Left Combat Canvas & Roadmap, Right Code & Task */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
           
-          {/* Left Column (5 Cols): Combat Arena + Level Selector */}
-          <div className="lg:col-span-5 flex flex-col gap-3">
+          {/* Left Column (5 Cols): Close-up Combat Arena + Roadmap */}
+          <div className="lg:col-span-5 flex flex-col gap-2.5">
             
-            {/* 2D Combat Canvas */}
+            {/* 2D Combat Canvas with Soldier & Orc */}
             <GameCanvas
               currentTrack={currentTrackId}
               stageNumber={currentStageNumber}
@@ -264,15 +258,15 @@ export default function App() {
               combatAction={combatAction}
               playerHp={playerState.hp}
               playerMaxHp={playerState.max_hp}
-              playerArmor={playerState.armor}
-              weaponName={playerState.weapon_name}
-              weaponAtk={playerState.weapon_atk}
+              characterName={playerState.character_name || 'Royal Soldier'}
+              weaponName={playerState.weapon_name || 'Steel Sword'}
+              weaponAtk={playerState.weapon_atk || 25}
               monsterHp={monsterHp}
               streak={playerState.current_streak}
               onCombatAnimationEnd={() => setCombatAction(null)}
             />
 
-            {/* Compact Stage Roadmap Strip */}
+            {/* Stage Roadmap Selector */}
             <StageSelector
               stages={currentTrack.stages}
               currentStageNumber={currentStageNumber}
@@ -282,7 +276,7 @@ export default function App() {
 
           </div>
 
-          {/* Right Column (7 Cols): Theory, Task Challenge, Code Editor & Terminal */}
+          {/* Right Column (7 Cols): Theory, Task & Code Editor */}
           <div className="lg:col-span-7">
             <CodePlayground
               stage={currentStage}
@@ -303,10 +297,10 @@ export default function App() {
       <footer className="mt-auto border-t-4 border-[#1E2522] bg-white p-3 font-mono text-xs text-center text-gray-600">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <span>
-            PIXELCODER RPG • Logged in as <strong>{playerState.username}</strong>
+            PIXELCODER RPG • Hero: <strong>{playerState.character_name || 'Royal Soldier'}</strong> ({playerState.username})
           </span>
           <span className="text-[#586526] font-bold">
-            Live Supabase Connected • Zero Dummy Data
+            Tiny RPG Pack: Soldier vs Orc • Live Supabase Connected
           </span>
         </div>
       </footer>
@@ -337,7 +331,7 @@ export default function App() {
         onClose={() => setIsInventoryOpen(false)}
         playerState={playerState}
         onEquipWeapon={handleEquipWeapon}
-        onEquipArmor={handleEquipArmor}
+        onSelectCharacter={handleSelectCharacter}
         onUsePotion={handleUsePotion}
         onBuyPotion={handleBuyPotion}
       />

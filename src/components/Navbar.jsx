@@ -1,14 +1,15 @@
 import React from 'react';
-import { Trophy, ShieldAlert, Sparkles, Terminal, Flame } from 'lucide-react';
+import { Trophy, ShieldAlert, Sparkles, Terminal, Flame, ShoppingBag, User, LogIn, Heart, Shield } from 'lucide-react';
 
 export default function Navbar({ 
   currentTrack, 
   onSelectTrack, 
-  xp, 
-  streak, 
-  role, 
+  playerState,
   onOpenLeaderboard, 
-  onOpenAdmin 
+  onOpenAdmin,
+  onOpenInventory,
+  onOpenAuth,
+  onSignOut
 }) {
   const tracks = [
     { id: 'python', label: 'Python', icon: '🐍' },
@@ -31,11 +32,11 @@ export default function Navbar({
                 PIXEL<span className="text-[#7D8D39]">CODER</span>
               </span>
               <span className="text-[10px] uppercase font-mono font-bold px-1.5 py-0.5 bg-[#7D8D39] text-white border border-[#1E2522]">
-                v1.0 Beta
+                RPG Combat
               </span>
             </div>
             <p className="text-[11px] font-mono text-[#586526] -mt-0.5">
-              2D Educational Pixel-Art Game
+              Battle Monsters • Learn Coding
             </p>
           </div>
         </div>
@@ -61,39 +62,70 @@ export default function Navbar({
           })}
         </div>
 
-        {/* Player Stats & Modals */}
-        <div className="flex items-center gap-3">
+        {/* Action Controls & RPG Buttons */}
+        <div className="flex items-center gap-2.5">
+          
           {/* XP Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FEF3C7] border-3 border-[#1E2522] shadow-[3px_3px_0px_#1E2522] font-mono font-bold text-xs">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#FEF3C7] border-3 border-[#1E2522] shadow-[3px_3px_0px_#1E2522] font-mono font-bold text-xs">
             <Sparkles className="w-4 h-4 text-[#D97706]" />
-            <span className="text-[#92400E]">{xp} XP</span>
+            <span className="text-[#92400E]">{playerState.total_xp} XP</span>
           </div>
 
-          {/* Streak Badge */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FEE2E2] border-3 border-[#1E2522] shadow-[3px_3px_0px_#1E2522] font-mono font-bold text-xs">
-            <Flame className="w-4 h-4 text-[#DC2626]" />
-            <span className="text-[#991B1B]">{streak} Day</span>
-          </div>
+          {/* Armory / Inventory Button */}
+          <button 
+            onClick={onOpenInventory}
+            className="neo-button text-xs px-2.5 py-1.5 gap-1.5 flex items-center bg-[#F3F6F4] text-[#1E2522] hover:bg-[#E7EEDB]"
+            title="Armory & Inventory"
+          >
+            <ShoppingBag className="w-4 h-4 text-[#7D8D39]" />
+            <span className="hidden sm:inline">Armory</span>
+          </button>
 
           {/* Leaderboard Button */}
           <button 
             onClick={onOpenLeaderboard}
-            className="neo-button neo-button-secondary text-xs px-3 py-1.5 gap-1.5 flex items-center"
-            title="Global Leaderboard"
+            className="neo-button text-xs px-2.5 py-1.5 gap-1.5 flex items-center bg-[#F3F6F4] text-[#1E2522] hover:bg-[#E7EEDB]"
+            title="Live Supabase Leaderboard"
           >
-            <Trophy className="w-4 h-4 text-[#7D8D39]" />
+            <Trophy className="w-4 h-4 text-[#F59E0B]" />
             <span className="hidden sm:inline">Rankings</span>
           </button>
+
+          {/* User Auth Pill / Button */}
+          {playerState.isLoggedIn ? (
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-[#DCFCE7] border-3 border-[#1E2522] shadow-[3px_3px_0px_#1E2522] font-mono font-bold text-xs text-[#166534]">
+                <User className="w-3.5 h-3.5 text-[#16A34A]" />
+                <span className="max-w-[80px] truncate">{playerState.username}</span>
+              </div>
+              <button
+                onClick={onSignOut}
+                className="text-[10px] font-mono text-gray-500 hover:text-red-600 underline"
+                title="Sign out"
+              >
+                Exit
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenAuth}
+              className="neo-button text-xs px-3 py-1.5 gap-1.5 flex items-center bg-[#7D8D39] text-white"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>Sign In</span>
+            </button>
+          )}
 
           {/* Admin Button */}
           <button 
             onClick={onOpenAdmin}
-            className="neo-button text-xs px-3 py-1.5 gap-1.5 flex items-center bg-[#1E2522] hover:bg-[#333E39] text-white"
-            title="Admin & Anti-Cheat Hub"
+            className="neo-button text-xs px-2.5 py-1.5 gap-1 flex items-center bg-[#1E2522] hover:bg-[#333E39] text-white"
+            title="Admin & Security Logs"
           >
-            <ShieldAlert className="w-4 h-4 text-[#F59E0B]" />
-            <span className="hidden sm:inline">Admin</span>
+            <ShieldAlert className="w-3.5 h-3.5 text-[#EF4444]" />
+            <span className="hidden md:inline">Admin</span>
           </button>
+
         </div>
 
       </div>

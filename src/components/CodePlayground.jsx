@@ -300,8 +300,8 @@ export default function CodePlayground({
           </div>
 
           <div className="font-mono text-xs whitespace-pre-line text-[#1E2522] leading-relaxed bg-[#F3F6F4] p-2.5 border-2 border-[#1E2522] max-h-40 overflow-y-auto">
-            {stage.theory}
-          </div>
+                      {stage.theory?.[language] || stage.theory?.en || stage.theory || ''}
+                    </div>
         </div>
 
         {/* Task Challenge Card */}

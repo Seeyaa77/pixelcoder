@@ -14,6 +14,7 @@ export default function GameCanvas({
   weaponAtk = 25,
   monsterHp = 100,
   streak = 1,
+  isCleared = false,
   onCombatAnimationEnd
 }) {
   const canvasRef = useRef(null);
@@ -21,28 +22,34 @@ export default function GameCanvas({
   const [combatLog, setCombatLog] = useState('');
 
   // Handle combat triggers
-  useEffect(() => {
-    if (combatAction === 'player_attack') {
-      setAnimState('soldier_attacking');
-      setCombatLog('CRITICAL STRIKE! Royal Soldier slashed the Orc for 100 DMG!');
-      const timer = setTimeout(() => {
+    useEffect(() => {
+      // If stage is already cleared, show dead monster permanently
+      if (isCleared) {
         setAnimState('orc_dying');
-        // Don't reset to idle - stay dead!
-        if (onCombatAnimationEnd) {
-          setTimeout(() => onCombatAnimationEnd(), 1200);
-        }
-      }, 850);
-      return () => clearTimeout(timer);
-    } else if (combatAction === 'monster_attack') {
-      setAnimState('orc_attacking');
-      setCombatLog('ORC RETALIATION! Orc clubbed Royal Soldier for 15 DMG!');
-      const timer = setTimeout(() => {
-        setAnimState('idle');
-        if (onCombatAnimationEnd) onCombatAnimationEnd();
-      }, 950);
-      return () => clearTimeout(timer);
-    }
-  }, [combatAction]);
+        return;
+      }
+    
+      if (combatAction === 'player_attack') {
+        setAnimState('soldier_attacking');
+        setCombatLog('CRITICAL STRIKE! Royal Soldier slashed the Orc for 100 DMG!');
+        const timer = setTimeout(() => {
+          setAnimState('orc_dying');
+          // Don't reset to idle - stay dead!
+          if (onCombatAnimationEnd) {
+            setTimeout(() => onCombatAnimationEnd(), 1200);
+          }
+        }, 850);
+        return () => clearTimeout(timer);
+      } else if (combatAction === 'monster_attack') {
+        setAnimState('orc_attacking');
+        setCombatLog('ORC RETALIATION! Orc clubbed Royal Soldier for 15 DMG!');
+        const timer = setTimeout(() => {
+          setAnimState('idle');
+          if (onCombatAnimationEnd) onCombatAnimationEnd();
+        }, 950);
+        return () => clearTimeout(timer);
+      }
+    }, [combatAction, isCleared]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -273,7 +280,7 @@ export default function GameCanvas({
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [animState, currentTrack, stageNumber, playerHp, monsterHp, characterName]);
+  }, [animState, currentTrack, stageNumber, playerHp, monsterHp, characterName, isCleared]);
 
   return (
     <div className="w-full neo-box p-3 bg-white">

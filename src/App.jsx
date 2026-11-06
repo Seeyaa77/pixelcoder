@@ -44,11 +44,12 @@ export default function App() {
     }
   }, [playerState]);
 
-  // Reset monster HP when stage changes
-  useEffect(() => {
-    setMonsterHp(100);
-    setCombatAction(null);
-  }, [currentStageNumber, currentTrackId]);
+  // Reset monster HP when stage changes - but keep dead (0 HP) if stage already cleared
+    useEffect(() => {
+      const isCleared = (playerState.clearedStages[currentTrackId] || []).includes(currentStageNumber);
+      setMonsterHp(isCleared ? 0 : 100);
+      setCombatAction(null);
+    }, [currentStageNumber, currentTrackId, playerState.clearedStages]);
 
   const handleSelectTrack = (trackId) => {
     setCurrentTrackId(trackId);
@@ -56,32 +57,35 @@ export default function App() {
   };
 
   const handleStageClear = (stageNum, xpAwarded, entropy) => {
-    setMonsterHp(0);
-    setPlayerState(prev => {
-      const trackCleared = prev.clearedStages[currentTrackId] || [];
-      const isNewClear = !trackCleared.includes(stageNum);
+      setMonsterHp(0);
+      setPlayerState(prev => {
+        const trackCleared = prev.clearedStages[currentTrackId] || [];
+        const isNewClear = !trackCleared.includes(stageNum);
 
-      const nextTrackCleared = isNewClear 
-        ? [...trackCleared, stageNum] 
-        : trackCleared;
-
-      const nextStageToUnlock = stageNum + 1;
-      if (!nextTrackCleared.includes(nextStageToUnlock) && nextStageToUnlock <= 15) {
-        nextTrackCleared.push(nextStageToUnlock);
-      }
-
-      return {
-        ...prev,
-        total_xp: prev.total_xp + (isNewClear ? xpAwarded : 20),
-        current_streak: prev.current_streak + (isNewClear ? 1 : 0),
-        gold: prev.gold + (isNewClear ? 75 : 15),
-        clearedStages: {
-          ...prev.clearedStages,
-          [currentTrackId]: nextTrackCleared
+        // NO rewards if already cleared
+        if (!isNewClear) {
+          return prev; // Return unchanged state - no XP, no gold, no streak
         }
-      };
-    });
-  };
+
+        const nextTrackCleared = [...trackCleared, stageNum];
+
+        const nextStageToUnlock = stageNum + 1;
+        if (!nextTrackCleared.includes(nextStageToUnlock) && nextStageToUnlock <= 15) {
+          nextTrackCleared.push(nextStageToUnlock);
+        }
+
+        return {
+          ...prev,
+          total_xp: prev.total_xp + xpAwarded,
+          current_streak: prev.current_streak + 1,
+          gold: prev.gold + 75,
+          clearedStages: {
+            ...prev.clearedStages,
+            [currentTrackId]: nextTrackCleared
+          }
+        };
+      });
+    };
 
   const handleStageFailed = () => {
     setPlayerState(prev => {
@@ -260,20 +264,21 @@ export default function App() {
           <div className="lg:col-span-5 flex flex-col gap-2.5">
             
             {/* 2D Combat Canvas with Soldier & Orc */}
-            <GameCanvas
-              currentTrack={currentTrackId}
-              stageNumber={currentStageNumber}
-              stageTitle={currentStage.title}
-              combatAction={combatAction}
-              playerHp={playerState.hp}
-              playerMaxHp={playerState.max_hp}
-              characterName={playerState.character_name || 'Royal Soldier'}
-              weaponName={playerState.weapon_name || 'Steel Sword'}
-              weaponAtk={playerState.weapon_atk || 25}
-              monsterHp={monsterHp}
-              streak={playerState.current_streak}
-              onCombatAnimationEnd={() => setCombatAction(null)}
-            />
+                        <GameCanvas
+                          currentTrack={currentTrackId}
+                          stageNumber={currentStageNumber}
+                          stageTitle={currentStage.title}
+                          combatAction={combatAction}
+                          playerHp={playerState.hp}
+                          playerMaxHp={playerState.max_hp}
+                          characterName={playerState.character_name || 'Royal Soldier'}
+                          weaponName={playerState.weapon_name || 'Steel Sword'}
+                          weaponAtk={playerState.weapon_atk || 25}
+                          monsterHp={monsterHp}
+                          streak={playerState.current_streak}
+                          isCleared={isCurrentStageCleared}
+                          onCombatAnimationEnd={() => setCombatAction(null)}
+                        />
 
             {/* Stage Roadmap Selector */}
             <StageSelector

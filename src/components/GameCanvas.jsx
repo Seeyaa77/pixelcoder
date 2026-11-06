@@ -123,11 +123,13 @@ export default function GameCanvas({
       let orcY = 46;
 
       if (animState === 'soldier_attacking') {
-        // Soldier lunges forward right into Orc's face!
-        soldierX = 40 + Math.min(100, (tick % 30) * 8);
+        // Soldier lunges forward ONCE, smoothly
+        const progress = Math.min(1, tick / 25);
+        soldierX = 40 + (progress * 100);
       } else if (animState === 'orc_attacking') {
-        // Orc lunges forward right into Soldier's face!
-        orcX = 210 - Math.min(95, (tick % 30) * 8);
+        // Orc lunges forward ONCE, smoothly
+        const progress = Math.min(1, tick / 25);
+        orcX = 210 - (progress * 95);
       }
 
       // 3. Draw Soldier (Player)
@@ -183,7 +185,13 @@ export default function GameCanvas({
       }
 
       if (activeOrcSheet && activeOrcSheet.complete && activeOrcSheet.naturalWidth > 0) {
-        const frameIndex = Math.min(orcFrames - 1, Math.floor(tick / orcSpeed) % orcFrames);
+        // For death animation: stop at last frame, don't loop
+        let frameIndex;
+        if (animState === 'orc_dying') {
+          frameIndex = Math.min(orcFrames - 1, Math.floor(tick / orcSpeed));
+        } else {
+          frameIndex = Math.min(orcFrames - 1, Math.floor(tick / orcSpeed) % orcFrames);
+        }
         const sourceX = frameIndex * 100;
 
         // Flash white on hit
@@ -191,12 +199,16 @@ export default function GameCanvas({
           ctx.filter = 'brightness(2.5)';
         }
 
-        // Render Orc at FULL 100x100 resolution!
+        // Flip Orc horizontally to face LEFT
+        ctx.save();
+        ctx.translate(orcX + 52.5, orcY);
+        ctx.scale(-1, 1);
         ctx.drawImage(
           activeOrcSheet,
           sourceX, 0, 100, 100,
-          orcX, orcY, 105, 105
+          -52.5, 0, 105, 105
         );
+        ctx.restore();
         ctx.filter = 'none';
       }
 

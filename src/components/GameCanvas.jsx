@@ -237,7 +237,7 @@ export default function GameCanvas({
       ctx.fillStyle = '#E5E7EB';
       ctx.fillRect(canvas.width - 132, 26, 110, 6);
       ctx.fillStyle = '#EF4444';
-      ctx.fillRect(canvas.width - 132, 110 * oHpRatio, 6);
+      ctx.fillRect(canvas.width - 132, 26, 110 * oHpRatio, 6);
       ctx.strokeStyle = '#1E2522';
       ctx.lineWidth = 1;
       ctx.strokeRect(canvas.width - 132, 26, 110, 6);

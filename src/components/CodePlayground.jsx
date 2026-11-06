@@ -47,74 +47,230 @@ export default function CodePlayground({
   };
 
   const runEvaluation = () => {
-    setIsRunning(true);
-    setStatus('idle');
-    setErrorMessage('');
+      setIsRunning(true);
+      setStatus('idle');
+      setErrorMessage('');
 
-    const elapsedMs = Date.now() - mountTime;
+      const elapsedMs = Date.now() - mountTime;
 
-    setTimeout(() => {
-      let simOutput = '';
-      let passed = false;
+      setTimeout(() => {
+        let simOutput = '';
+        let passed = false;
+        let runtimeOutput = '';
 
-      try {
-        if (stage.regexMatch) {
-          const re = new RegExp(stage.regexMatch);
-          passed = re.test(code);
-        } else {
-          passed = code.replace(/\s+/g, '').includes(stage.solution.replace(/\s+/g, ''));
-        }
-
-        if (passed) {
-          simOutput = stage.expectedOutput;
-          setStatus('cleared');
-          setOutput(simOutput);
-
-          // Trigger Player Slash & Monster Death Combat Animation
-          if (onCombatTrigger) {
-            onCombatTrigger('player_attack');
+        try {
+          // Execute code based on track
+          if (trackId === 'javascript') {
+            // Real JavaScript execution in browser
+            const logs = [];
+            const originalLog = console.log;
+            console.log = (...args) => {
+              logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+              originalLog.apply(console, args);
+            };
+          
+            try {
+              const fn = new Function('console', `
+                ${code}
+              `);
+              fn({ log: (...args) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')) });
+            } catch (execErr) {
+              throw execErr;
+            } finally {
+              console.log = originalLog;
+            }
+          
+            runtimeOutput = logs.join('\n');
+          
+            // Validate: check if output matches expected
+            if (stage.regexMatch) {
+              const re = new RegExp(stage.regexMatch);
+              passed = re.test(runtimeOutput) || re.test(code);
+            } else {
+              passed = runtimeOutput.trim().replace(/\s+/g, '') === stage.expectedOutput.trim().replace(/\s+/g, '') 
+                || code.replace(/\s+/g, '').includes(stage.solution.replace(/\s+/g, ''));
+            }
+          
+            simOutput = runtimeOutput || '[No output - check your console.log statements]';
+          } else if (trackId === 'python') {
+            // Python simulation - validate code pattern and show expected output
+            if (stage.regexMatch) {
+              const re = new RegExp(stage.regexMatch);
+              passed = re.test(code);
+            } else {
+              passed = code.replace(/\s+/g, '').includes(stage.solution.replace(/\s+/g, ''));
+            }
+          
+            if (passed) {
+              simOutput = stage.expectedOutput;
+            } else {
+              // Show what output WOULD look like for user's code attempt
+              simOutput = simulatePythonOutput(code, stage);
+            }
+          } else if (trackId === 'cpp') {
+            // C++ simulation - validate code pattern and show expected output
+            if (stage.regexMatch) {
+              const re = new RegExp(stage.regexMatch);
+              passed = re.test(code);
+            } else {
+              passed = code.replace(/\s+/g, '').includes(stage.solution.replace(/\s+/g, ''));
+            }
+          
+            if (passed) {
+              simOutput = stage.expectedOutput;
+            } else {
+              simOutput = simulateCppOutput(code, stage);
+            }
           }
 
-          confetti({
-            particleCount: 50,
-            spread: 60,
-            origin: { y: 0.7 },
-            colors: ['#7D8D39', '#F59E0B', '#1E2522']
-          });
+          if (passed) {
+            setStatus('cleared');
+            setOutput(simOutput);
 
-          onStageClear(stage.stageNumber, stage.xp, {
-            duration_ms: elapsedMs,
-            keystrokes,
-            codeLength: code.length
-          });
-        } else {
-          // Trigger Monster Counter-Attack & HP Damage
+            // Trigger Player Slash & Monster Death Combat Animation
+            if (onCombatTrigger) {
+              onCombatTrigger('player_attack');
+            }
+
+            confetti({
+              particleCount: 50,
+              spread: 60,
+              origin: { y: 0.7 },
+              colors: ['#7D8D39', '#F59E0B', '#1E2522']
+            });
+
+            onStageClear(stage.stageNumber, stage.xp, {
+              duration_ms: elapsedMs,
+              keystrokes,
+              codeLength: code.length
+            });
+          } else {
+            // Trigger Monster Counter-Attack & HP Damage
+            if (onCombatTrigger) {
+              onCombatTrigger('monster_attack');
+            }
+
+            if (!simOutput) {
+              simOutput = `[Execution Failure]\nOutput did not match expected solution!\nExpected output format:\n${stage.expectedOutput}\n\n[Warning]: The monster struck back! HP reduced!`;
+            }
+            setStatus('error');
+            setOutput(simOutput);
+            setErrorMessage('Validation tests failed. Monster retaliated!');
+
+            if (onStageFailed) {
+              onStageFailed();
+            }
+          }
+        } catch (err) {
           if (onCombatTrigger) {
             onCombatTrigger('monster_attack');
           }
-
-          simOutput = `[Execution Failure]\nOutput did not match expected solution!\nExpected output format:\n${stage.expectedOutput}\n\n[Warning]: The monster struck back! HP reduced!`;
           setStatus('error');
-          setOutput(simOutput);
-          setErrorMessage('Validation tests failed. Monster retaliated!');
+          setOutput(`[Syntax/Runtime Error]: ${err.message}\n${trackId === 'javascript' ? 'Check your JavaScript syntax.' : `Simulated ${trackId} error: ${err.message}`}\nMonster retaliated!`);
+          setErrorMessage(err.message);
+          if (onStageFailed) onStageFailed();
+        } finally {
+          setIsRunning(false);
+        }
+      }, 600);
+    };
 
-          if (onStageFailed) {
-            onStageFailed();
+    // Simulate Python console output for learning feedback
+    const simulatePythonOutput = (code, stage) => {
+      const lines = code.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+      let output = '';
+    
+      // Try to extract print statements
+      const printMatches = code.match(/print\s*\(([^)]+)\)/g);
+      if (printMatches) {
+        printMatches.forEach(match => {
+          const content = match.replace(/print\s*\(/, '').replace(/\)$/, '');
+          // Simple evaluation for common patterns
+          if (content.includes('hero_name') && content.includes('hero_level')) {
+            output += 'Aria\n1\n';
+          } else if (content.includes('total_mana')) {
+            output += '160\n';
+          } else if (content.includes('remaining_gold')) {
+            output += '30\nTrue\n';
+          } else if (content.includes('evaluate_boss')) {
+            output += 'Enraged\n';
+          } else if (content.includes('range')) {
+            output += '2\n4\n6\n8\n10\n';
+          } else if (content.includes('inventory')) {
+            output += "['potion', 'shield', 'sword']\n";
+          } else if (content.includes('hero') && content.includes('hp')) {
+            output += '100\n';
+          } else if (content.includes('sum_all')) {
+            output += '60\n';
+          } else if (content.includes('lambda')) {
+            output += '[2, 4, 6]\n';
+          } else if (content.includes('atk') || content.includes('knight') || content.includes('Knight')) {
+            output += '50\n';
+          } else if (content.includes('yield_mana')) {
+            output += '10\n20\n';
+          } else if (content.includes('SAVE_POINT')) {
+            output += 'SAVE_POINT\n';
+          } else if (content.includes('Shield Protected')) {
+            output += 'Shield Protected\n';
+          } else if (content.includes('sum(attacks)') || content.includes('Boss Defeated')) {
+            output += 'Boss Defeated\n';
+          } else {
+            output += content.replace(/['"]/g, '') + '\n';
           }
-        }
-      } catch (err) {
-        if (onCombatTrigger) {
-          onCombatTrigger('monster_attack');
-        }
-        setStatus('error');
-        setOutput(`[Syntax/Runtime Error]: ${err.message}\nMonster retaliated!`);
-        setErrorMessage(err.message);
-        if (onStageFailed) onStageFailed();
-      } finally {
-        setIsRunning(false);
+        });
       }
-    }, 600);
-  };
+    
+      return output || `[Python Execution]\n${lines.slice(0, 5).join('\n')}\n... (simulated output)\n\nExpected: ${stage.expectedOutput}`;
+    };
+
+    // Simulate C++ console output for learning feedback
+    const simulateCppOutput = (code, stage) => {
+      const lines = code.split('\n').filter(l => l.trim() && !l.trim().startsWith('//'));
+      let output = '';
+    
+      // Try to extract cout statements
+      const coutMatches = code.match(/cout\s*<<\s*[^;]+/g);
+      if (coutMatches) {
+        coutMatches.forEach(match => {
+          const content = match.replace(/cout\s*<<\s*/, '').replace(/;\s*$/, '');
+          if (content.includes('Ready Player 1')) {
+            output += 'Ready Player 1\n';
+          } else if (content.includes('shields') && content.includes('shieldMultiplier')) {
+            output += '75\n';
+          } else if (content.includes('Attack') && content.includes('finalAtk')) {
+            output += 'Attack: 35\n';
+          } else if (content.includes('durability')) {
+            output += 'Worn\n';
+          } else if (content.includes('totalSum')) {
+            output += '15\n';
+          } else if (content.includes('gems')) {
+            output += '20\n';
+          } else if (content.includes('ref') || content.includes('mana')) {
+            output += '100\n';
+          } else if (content.includes('ptr') || content.includes('hp')) {
+            output += '50\n';
+          } else if (content.includes('heal') || content.includes('p')) {
+            output += '100\n';
+          } else if (content.includes('attack') || content.includes('Hero')) {
+            output += '40\n';
+          } else if (content.includes('score')) {
+            output += '999\n';
+          } else if (content.includes('Virtual Sword Attack')) {
+            output += 'Virtual Sword Attack\n';
+          } else if (content.includes('size') || content.includes('vector')) {
+            output += '2\n';
+          } else if (content.includes('maxVal') || content.includes('25')) {
+            output += '25\n';
+          } else if (content.includes('Memory Secure')) {
+            output += 'Memory Secure\n';
+          } else {
+            output += content.replace(/['"]/g, '') + '\n';
+          }
+        });
+      }
+    
+      return output || `[C++ Execution]\n${lines.slice(0, 5).join('\n')}\n... (simulated output)\n\nExpected: ${stage.expectedOutput}`;
+    };
 
   const handleReset = () => {
     setCode(stage.starterCode || '');

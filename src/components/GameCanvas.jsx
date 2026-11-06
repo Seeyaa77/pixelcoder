@@ -22,34 +22,38 @@ export default function GameCanvas({
   const [combatLog, setCombatLog] = useState('');
 
   // Handle combat triggers
-    useEffect(() => {
-      // If stage is already cleared, show dead monster permanently
-      if (isCleared) {
-        setAnimState('orc_dying');
-        return;
-      }
-    
-      if (combatAction === 'player_attack') {
-        setAnimState('soldier_attacking');
-        setCombatLog('CRITICAL STRIKE! Royal Soldier slashed the Orc for 100 DMG!');
-        const timer = setTimeout(() => {
+      useEffect(() => {
+        // If stage is already cleared, show dead monster permanently
+        if (isCleared) {
           setAnimState('orc_dying');
-          // Don't reset to idle - stay dead!
-          if (onCombatAnimationEnd) {
-            setTimeout(() => onCombatAnimationEnd(), 1200);
-          }
-        }, 850);
-        return () => clearTimeout(timer);
-      } else if (combatAction === 'monster_attack') {
-        setAnimState('orc_attacking');
-        setCombatLog('ORC RETALIATION! Orc clubbed Royal Soldier for 15 DMG!');
-        const timer = setTimeout(() => {
-          setAnimState('idle');
-          if (onCombatAnimationEnd) onCombatAnimationEnd();
-        }, 950);
-        return () => clearTimeout(timer);
-      }
-    }, [combatAction, isCleared]);
+          return;
+        }
+      
+        // If not cleared, reset to idle (when navigating from cleared to uncleared stage)
+        setAnimState('idle');
+        setCombatLog('');
+
+        if (combatAction === 'player_attack') {
+          setAnimState('soldier_attacking');
+          setCombatLog('CRITICAL STRIKE! Royal Soldier slashed the Orc for 100 DMG!');
+          const timer = setTimeout(() => {
+            setAnimState('orc_dying');
+            // Don't reset to idle - stay dead!
+            if (onCombatAnimationEnd) {
+              setTimeout(() => onCombatAnimationEnd(), 1200);
+            }
+          }, 850);
+          return () => clearTimeout(timer);
+        } else if (combatAction === 'monster_attack') {
+          setAnimState('orc_attacking');
+          setCombatLog('ORC RETALIATION! Orc clubbed Royal Soldier for 15 DMG!');
+          const timer = setTimeout(() => {
+            setAnimState('idle');
+            if (onCombatAnimationEnd) onCombatAnimationEnd();
+          }, 950);
+          return () => clearTimeout(timer);
+        }
+      }, [combatAction, isCleared]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

@@ -42,11 +42,108 @@ export default function CodePlayground({
   }, [stage, isCleared]);
 
   const handleCodeChange = (e) => {
-    setCode(e.target.value);
-    setKeystrokes(prev => prev + 1);
-  };
+      setCode(e.target.value);
+      setKeystrokes(prev => prev + 1);
+    };
 
-  const runEvaluation = () => {
+    // Simulate Python console output for learning feedback
+    const simulatePythonOutput = (code, stage) => {
+      const lines = code.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
+      let output = '';
+  
+      // Try to extract print statements
+      const printMatches = code.match(/print\s*\(([^)]+)\)/g);
+      if (printMatches) {
+        printMatches.forEach(match => {
+          const content = match.replace(/print\s*\(/, '').replace(/\)$/, '');
+          // Simple evaluation for common patterns
+          if (content.includes('hero_name') && content.includes('hero_level')) {
+            output += 'Aria\n1\n';
+          } else if (content.includes('total_mana')) {
+            output += '160\n';
+          } else if (content.includes('remaining_gold')) {
+            output += '30\nTrue\n';
+          } else if (content.includes('evaluate_boss')) {
+            output += 'Enraged\n';
+          } else if (content.includes('range')) {
+            output += '2\n4\n6\n8\n10\n';
+          } else if (content.includes('inventory')) {
+            output += "['potion', 'shield', 'sword']\n";
+          } else if (content.includes('hero') && content.includes('hp')) {
+            output += '100\n';
+          } else if (content.includes('sum_all')) {
+            output += '60\n';
+          } else if (content.includes('lambda')) {
+            output += '[2, 4, 6]\n';
+          } else if (content.includes('atk') || content.includes('knight') || content.includes('Knight')) {
+            output += '50\n';
+          } else if (content.includes('yield_mana')) {
+            output += '10\n20\n';
+          } else if (content.includes('SAVE_POINT')) {
+            output += 'SAVE_POINT\n';
+          } else if (content.includes('Shield Protected')) {
+            output += 'Shield Protected\n';
+          } else if (content.includes('sum(attacks)') || content.includes('Boss Defeated')) {
+            output += 'Boss Defeated\n';
+          } else {
+            output += content.replace(/['"]/g, '') + '\n';
+          }
+        });
+      }
+  
+      return output || `[Python Execution]\n${lines.slice(0, 5).join('\n')}\n... (simulated output)\n\nExpected: ${stage.expectedOutput}`;
+    };
+
+    // Simulate C++ console output for learning feedback
+    const simulateCppOutput = (code, stage) => {
+      const lines = code.split('\n').filter(l => l.trim() && !l.trim().startsWith('//'));
+      let output = '';
+  
+      // Try to extract cout statements
+      const coutMatches = code.match(/cout\s*<<\s*[^;]+/g);
+      if (coutMatches) {
+        coutMatches.forEach(match => {
+          const content = match.replace(/cout\s*<<\s*/, '').replace(/;\s*$/, '');
+          if (content.includes('Ready Player 1')) {
+            output += 'Ready Player 1\n';
+          } else if (content.includes('shields') && content.includes('shieldMultiplier')) {
+            output += '75\n';
+          } else if (content.includes('Attack') && content.includes('finalAtk')) {
+            output += 'Attack: 35\n';
+          } else if (content.includes('durability')) {
+            output += 'Worn\n';
+          } else if (content.includes('totalSum')) {
+            output += '15\n';
+          } else if (content.includes('gems')) {
+            output += '20\n';
+          } else if (content.includes('ref') || content.includes('mana')) {
+            output += '100\n';
+          } else if (content.includes('ptr') || content.includes('hp')) {
+            output += '50\n';
+          } else if (content.includes('heal') || content.includes('p')) {
+            output += '100\n';
+          } else if (content.includes('attack') || content.includes('Hero')) {
+            output += '40\n';
+          } else if (content.includes('score')) {
+            output += '999\n';
+          } else if (content.includes('Virtual Sword Attack')) {
+            output += 'Virtual Sword Attack\n';
+          } else if (content.includes('size') || content.includes('vector')) {
+            output += '2\n';
+          } else if (content.includes('maxVal') || content.includes('25')) {
+            output += '25\n';
+          } else if (content.includes('Memory Secure')) {
+            output += 'Memory Secure\n';
+          } else {
+            output += content.replace(/['"]/g, '') + '\n';
+          }
+        });
+      }
+  
+      return output || `[C++ Execution]\n${lines.slice(0, 5).join('\n')}\n... (simulated output)\n\nExpected: ${stage.expectedOutput}`;
+    };
+
+    const runEvaluation = () => {
       setIsRunning(true);
       setStatus('idle');
       setErrorMessage('');
@@ -173,106 +270,9 @@ export default function CodePlayground({
           setIsRunning(false);
         }
       }, 600);
-    };
+        };
 
-    // Simulate Python console output for learning feedback
-    const simulatePythonOutput = (code, stage) => {
-      const lines = code.split('\n').filter(l => l.trim() && !l.trim().startsWith('#'));
-      let output = '';
-    
-      // Try to extract print statements
-      const printMatches = code.match(/print\s*\(([^)]+)\)/g);
-      if (printMatches) {
-        printMatches.forEach(match => {
-          const content = match.replace(/print\s*\(/, '').replace(/\)$/, '');
-          // Simple evaluation for common patterns
-          if (content.includes('hero_name') && content.includes('hero_level')) {
-            output += 'Aria\n1\n';
-          } else if (content.includes('total_mana')) {
-            output += '160\n';
-          } else if (content.includes('remaining_gold')) {
-            output += '30\nTrue\n';
-          } else if (content.includes('evaluate_boss')) {
-            output += 'Enraged\n';
-          } else if (content.includes('range')) {
-            output += '2\n4\n6\n8\n10\n';
-          } else if (content.includes('inventory')) {
-            output += "['potion', 'shield', 'sword']\n";
-          } else if (content.includes('hero') && content.includes('hp')) {
-            output += '100\n';
-          } else if (content.includes('sum_all')) {
-            output += '60\n';
-          } else if (content.includes('lambda')) {
-            output += '[2, 4, 6]\n';
-          } else if (content.includes('atk') || content.includes('knight') || content.includes('Knight')) {
-            output += '50\n';
-          } else if (content.includes('yield_mana')) {
-            output += '10\n20\n';
-          } else if (content.includes('SAVE_POINT')) {
-            output += 'SAVE_POINT\n';
-          } else if (content.includes('Shield Protected')) {
-            output += 'Shield Protected\n';
-          } else if (content.includes('sum(attacks)') || content.includes('Boss Defeated')) {
-            output += 'Boss Defeated\n';
-          } else {
-            output += content.replace(/['"]/g, '') + '\n';
-          }
-        });
-      }
-    
-      return output || `[Python Execution]\n${lines.slice(0, 5).join('\n')}\n... (simulated output)\n\nExpected: ${stage.expectedOutput}`;
-    };
-
-    // Simulate C++ console output for learning feedback
-    const simulateCppOutput = (code, stage) => {
-      const lines = code.split('\n').filter(l => l.trim() && !l.trim().startsWith('//'));
-      let output = '';
-    
-      // Try to extract cout statements
-      const coutMatches = code.match(/cout\s*<<\s*[^;]+/g);
-      if (coutMatches) {
-        coutMatches.forEach(match => {
-          const content = match.replace(/cout\s*<<\s*/, '').replace(/;\s*$/, '');
-          if (content.includes('Ready Player 1')) {
-            output += 'Ready Player 1\n';
-          } else if (content.includes('shields') && content.includes('shieldMultiplier')) {
-            output += '75\n';
-          } else if (content.includes('Attack') && content.includes('finalAtk')) {
-            output += 'Attack: 35\n';
-          } else if (content.includes('durability')) {
-            output += 'Worn\n';
-          } else if (content.includes('totalSum')) {
-            output += '15\n';
-          } else if (content.includes('gems')) {
-            output += '20\n';
-          } else if (content.includes('ref') || content.includes('mana')) {
-            output += '100\n';
-          } else if (content.includes('ptr') || content.includes('hp')) {
-            output += '50\n';
-          } else if (content.includes('heal') || content.includes('p')) {
-            output += '100\n';
-          } else if (content.includes('attack') || content.includes('Hero')) {
-            output += '40\n';
-          } else if (content.includes('score')) {
-            output += '999\n';
-          } else if (content.includes('Virtual Sword Attack')) {
-            output += 'Virtual Sword Attack\n';
-          } else if (content.includes('size') || content.includes('vector')) {
-            output += '2\n';
-          } else if (content.includes('maxVal') || content.includes('25')) {
-            output += '25\n';
-          } else if (content.includes('Memory Secure')) {
-            output += 'Memory Secure\n';
-          } else {
-            output += content.replace(/['"]/g, '') + '\n';
-          }
-        });
-      }
-    
-      return output || `[C++ Execution]\n${lines.slice(0, 5).join('\n')}\n... (simulated output)\n\nExpected: ${stage.expectedOutput}`;
-    };
-
-  const handleReset = () => {
+        const handleReset = () => {
     setCode(stage.starterCode || '');
     setOutput('');
     setStatus('idle');

@@ -17,6 +17,7 @@ export default function App() {
   const [currentTrackId, setCurrentTrackId] = useState('python');
   const [currentStageNumber, setCurrentStageNumber] = useState(1);
   const [playerState, setPlayerState] = useState(getStoredSession());
+  const [language, setLanguage] = useState('en'); // 'en' | 'id'
 
   // Combat State
   const [combatAction, setCombatAction] = useState(null);
@@ -226,6 +227,14 @@ export default function App() {
 
           <div className="flex items-center gap-2 font-mono text-xs">
             <button
+              onClick={() => setLanguage(language === 'en' ? 'id' : 'en')}
+              className="neo-button text-[11px] py-1 px-2 bg-[#E0E7FF] text-[#3730A3] hover:bg-[#C7D2FE] flex items-center gap-1"
+              title={language === 'en' ? 'Switch to Indonesian' : 'Ganti ke English'}
+            >
+              <span className="font-bold">{language === 'en' ? '🇬🇧 EN' : '🇮🇩 ID'}</span>
+            </button>
+
+            <button
               onClick={handleUsePotion}
               disabled={playerState.potions <= 0 || playerState.hp >= playerState.max_hp}
               className="neo-button text-[11px] py-1 px-2 bg-[#FEE2E2] text-[#991B1B] hover:bg-[#FECACA] flex items-center gap-1"
@@ -280,6 +289,15 @@ export default function App() {
           <div className="lg:col-span-7">
             <CodePlayground
               stage={currentStage}
+              trackId={currentTrackId}
+              language={language}
+              playerGold={playerState.gold}
+              onBuyHint={(cost) => {
+                setPlayerState(prev => ({
+                  ...prev,
+                  gold: prev.gold - cost
+                }));
+              }}
               isCleared={isCurrentStageCleared}
               onStageClear={handleStageClear}
               onStageFailed={handleStageFailed}

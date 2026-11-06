@@ -2,9 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Play, RotateCcw, Lightbulb, CheckCircle2, AlertCircle, BookOpen, Code2, Sword } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { PixelCoinIcon } from './Icons';
+import { getTranslation, getHintCost } from '../data/translations';
 
 export default function CodePlayground({ 
   stage, 
+  trackId,
+  language = 'en',
+  playerGold = 0,
+  onBuyHint,
   onStageClear, 
   onStageFailed,
   isCleared,
@@ -18,8 +23,13 @@ export default function CodePlayground({
   const [status, setStatus] = useState(isCleared ? 'cleared' : 'idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [showHint, setShowHint] = useState(false);
+  const [hintBought, setHintBought] = useState(false);
   const [mountTime] = useState(Date.now());
   const [keystrokes, setKeystrokes] = useState(0);
+
+  const hintCost = getHintCost(stage.stageNumber);
+  const translatedQuestion = getTranslation(trackId, stage.stageNumber, 'question', language) || stage.question;
+  const translatedHint = getTranslation(trackId, stage.stageNumber, 'hint', language);
 
   useEffect(() => {
     setCode(stage.starterCode || '');
@@ -27,6 +37,7 @@ export default function CodePlayground({
     setStatus(isCleared ? 'cleared' : 'idle');
     setErrorMessage('');
     setShowHint(false);
+    setHintBought(false);
     setKeystrokes(0);
   }, [stage, isCleared]);
 
@@ -144,7 +155,7 @@ export default function CodePlayground({
               <div className="flex items-center gap-1.5">
                 <Code2 className="w-4 h-4 text-[#D97706]" />
                 <h4 className="font-extrabold text-xs uppercase text-[#1E2522]">
-                  Stage Objective
+                  {language === 'en' ? 'Stage Objective' : 'Tujuan Stage'}
                 </h4>
               </div>
               <div className="flex items-center gap-1.5">
@@ -159,31 +170,54 @@ export default function CodePlayground({
             </div>
 
             <p className="text-xs font-medium text-[#1E2522] leading-relaxed mb-2">
-              {stage.question}
+              {translatedQuestion}
             </p>
           </div>
 
           <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
             <div className="bg-[#E7EEDB] border border-[#1E2522] px-2 py-1 font-mono text-[11px] text-[#586526] font-bold flex items-center gap-1">
-              <span>Expected:</span>
+              <span>{language === 'en' ? 'Expected:' : 'Output:'}</span>
               <span className="text-[#1E2522] font-mono">{stage.expectedOutput.replace('\n', ' ')}</span>
             </div>
 
-            <button
-              onClick={() => setShowHint(!showHint)}
-              className="text-[11px] font-mono font-bold text-[#586526] flex items-center gap-1 hover:underline"
-            >
-              <Lightbulb className="w-3.5 h-3.5 text-[#D97706]" />
-              <span>{showHint ? 'Hide' : 'Hint'}</span>
-            </button>
+            {!hintBought && translatedHint ? (
+              <button
+                onClick={() => {
+                  if (playerGold >= hintCost) {
+                    setHintBought(true);
+                    setShowHint(true);
+                    onBuyHint(hintCost);
+                  }
+                }}
+                disabled={playerGold < hintCost}
+                className={`text-[11px] font-mono font-bold flex items-center gap-1 px-2 py-1 border border-[#1E2522] ${
+                  playerGold >= hintCost 
+                    ? 'bg-[#FEF08A] text-[#854D0E] hover:bg-[#FDE047] cursor-pointer' 
+                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                }`}
+                title={playerGold < hintCost ? (language === 'en' ? 'Not enough gold!' : 'Gold tidak cukup!') : ''}
+              >
+                <Lightbulb className="w-3.5 h-3.5" />
+                <PixelCoinIcon className="w-3 h-3" />
+                <span>{hintCost}</span>
+              </button>
+            ) : hintBought ? (
+              <button
+                onClick={() => setShowHint(!showHint)}
+                className="text-[11px] font-mono font-bold text-[#10B981] flex items-center gap-1 hover:underline"
+              >
+                <Lightbulb className="w-3.5 h-3.5" />
+                <span>{showHint ? (language === 'en' ? 'Hide' : 'Tutup') : 'Hint'}</span>
+              </button>
+            ) : null}
           </div>
 
-          {showHint && (
+          {showHint && hintBought && translatedHint && (
             <div className="mt-2 bg-[#FEF9C3] p-2 border-2 border-[#1E2522] font-mono text-[11px] text-[#713F12]">
-              <strong>Hint Solution:</strong>
-              <pre className="mt-1 bg-white p-1 border border-[#1E2522] overflow-x-auto text-[10px]">
-                {stage.solution}
-              </pre>
+              <strong>{language === 'en' ? '💡 Hint:' : '💡 Petunjuk:'}</strong>
+              <p className="mt-1 text-[10px] leading-relaxed">
+                {translatedHint}
+              </p>
             </div>
           )}
         </div>

@@ -27,11 +27,10 @@ export default function GameCanvas({
       setCombatLog('CRITICAL STRIKE! Royal Soldier slashed the Orc for 100 DMG!');
       const timer = setTimeout(() => {
         setAnimState('orc_dying');
-        const deathTimer = setTimeout(() => {
-          setAnimState('idle');
-          if (onCombatAnimationEnd) onCombatAnimationEnd();
-        }, 1200);
-        return () => clearTimeout(deathTimer);
+        // Don't reset to idle - stay dead!
+        if (onCombatAnimationEnd) {
+          setTimeout(() => onCombatAnimationEnd(), 1200);
+        }
       }, 850);
       return () => clearTimeout(timer);
     } else if (combatAction === 'monster_attack') {

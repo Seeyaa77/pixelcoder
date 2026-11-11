@@ -263,158 +263,143 @@ export function runJavaScript(code) {
   });
 }
 
-let pyodideReady = null;
-
-function loadPyodideEngine() {
-  if (pyodideReady) return pyodideReady;
-
-  const loading = new Promise((resolve, reject) => {
-    if (typeof document === 'undefined') {
-      reject(new Error('No document available to load Pyodide.'));
-      return;
+/*
+ * Python runs inside a dedicated Web Worker. The runtime is loaded once from
+ * the CDN and reused, but a runaway loop can be killed by terminating the
+ * worker — the page itself never freezes.
+ */
+const PYTHON_WORKER_SOURCE = `importScripts(${JSON.stringify(PYODIDE_BASE + 'pyodide.js')});
+let booting = null;
+function boot() {
+  if (!booting) booting = loadPyodide({ indexURL: ${JSON.stringify(PYODIDE_BASE)} });
+  return booting;
+}
+function push(text, add) {
+  const chunk = String(text === undefined || text === null ? '' : text);
+  add(chunk);
+}
+self.onmessage = async (event) => {
+  const data = event.data || {};
+  const id = data.id;
+  let stdout = '';
+  let stderr = '';
+  const NL = String.fromCharCode(10);
+  const addOut = (chunk) => { stdout += chunk; if (!chunk.endsWith(NL)) stdout += NL; };
+  const addErr = (chunk) => { stderr += chunk; if (!chunk.endsWith(NL)) stderr += NL; };
+  try {
+    const pyodide = await boot();
+    pyodide.setStdout({ batched: (text) => push(text, addOut) });
+    pyodide.setStderr({ batched: (text) => push(text, addErr) });
+    let globals = null;
+    try { globals = pyodide.toPy({ __name__: '__main__' }); } catch (error) { globals = null; }
+    try {
+      await pyodide.runPythonAsync(String(data.code === undefined ? '' : data.code), globals ? { globals } : undefined);
+    } finally {
+      if (globals && typeof globals.destroy === 'function') { try { globals.destroy(); } catch (error) { /* ignore */ } }
     }
+    self.postMessage({ id, ok: true, stdout, stderr });
+  } catch (error) {
+    const message = String((error && (error.message || error.toString())) || error);
+    const fatal = /importScripts|Failed to fetch|NetworkError|loadPyodide is not defined|Cannot read propert/i.test(message);
+    self.postMessage({ id, ok: false, fatal, stdout, stderr, error: message });
+  }
+};`;
 
-    const boot = () => {
-      if (typeof window === 'undefined' || typeof window.loadPyodide !== 'function') {
-        reject(new Error('Pyodide loader did not initialise.'));
-        return;
-      }
-      window.loadPyodide({ indexURL: PYODIDE_BASE }).then(resolve, reject);
-    };
+let pythonWorker = null;
+let pythonJobId = 0;
+const pythonJobs = new Map();
 
-    if (typeof window !== 'undefined' && typeof window.loadPyodide === 'function') {
-      boot();
-      return;
+function stopPythonWorker(reason) {
+  if (pythonWorker) {
+    try {
+      pythonWorker.terminate();
+    } catch {
+      /* ignore */
     }
-
-    const existing = document.querySelector('script[data-pixelcoder-pyodide]');
-    if (existing) {
-      if (existing.dataset.loaded === 'true') {
-        boot();
-        return;
-      }
-      existing.addEventListener('load', boot, { once: true });
-      existing.addEventListener(
-        'error',
-        () => reject(new Error('Pyodide CDN script failed to load.')),
-        { once: true }
-      );
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = `${PYODIDE_BASE}pyodide.js`;
-    script.async = true;
-    script.dataset.pixelcoderPyodide = 'true';
-    script.addEventListener('load', () => {
-      script.dataset.loaded = 'true';
-      boot();
-    }, { once: true });
-    script.addEventListener(
-      'error',
-      () => reject(new Error('Pyodide CDN script failed to load.')),
-      { once: true }
-    );
-    document.head.appendChild(script);
-  });
-
-  pyodideReady = loading.catch((error) => {
-    pyodideReady = null;
-    throw error;
-  });
-
-  return pyodideReady;
+  }
+  pythonWorker = null;
+  for (const [id, job] of pythonJobs.entries()) {
+    clearTimeout(job.timer);
+    job.reject(new Error(reason));
+    pythonJobs.delete(id);
+  }
 }
 
-function withTimeout(promise, ms, message) {
-  let timer = null;
-  const guard = new Promise((_resolve, reject) => {
-    timer = setTimeout(() => reject(new Error(message)), ms);
-  });
-  return Promise.race([promise, guard]).finally(() => {
-    if (timer !== null) clearTimeout(timer);
-  });
+function getPythonWorker() {
+  if (pythonWorker) return pythonWorker;
+  if (typeof Worker === 'undefined' || typeof Blob === 'undefined' || typeof URL === 'undefined') {
+    throw new Error('Web Workers are not available in this browser.');
+  }
+  const url = URL.createObjectURL(new Blob([PYTHON_WORKER_SOURCE], { type: 'text/javascript' }));
+  const worker = new Worker(url);
+  worker.onmessage = (event) => {
+    const payload = event.data || {};
+    const job = pythonJobs.get(payload.id);
+    if (!job) return;
+    clearTimeout(job.timer);
+    pythonJobs.delete(payload.id);
+    job.resolve(payload);
+  };
+  worker.onerror = (event) => {
+    stopPythonWorker((event && event.message) || 'Python worker crashed.');
+  };
+  pythonWorker = worker;
+  return worker;
 }
 
 /**
- * Execute Python with real CPython compiled to WebAssembly (Pyodide).
- * The runtime is loaded once from the CDN and reused for later runs.
+ * Execute Python with real CPython compiled to WebAssembly (Pyodide) inside a
+ * worker that can be terminated, so `while True:` cannot freeze the page.
  * @returns {Promise<{ok: boolean, output: string, error: string, mode: 'real'|'unavailable', durationMs: number}>}
  */
 export async function runPython(code) {
   const startedAt = now();
-  let pyodide = null;
 
+  let worker;
   try {
-    pyodide = await loadPyodideEngine();
+    worker = getPythonWorker();
   } catch (error) {
     return {
       ok: false,
       output: '',
-      error: `Python engine could not be loaded — check your connection or offline status. (${(error && error.message) || error})`,
+      error: `Python engine unavailable — ${(error && error.message) || error}`,
       mode: 'unavailable',
       durationMs: elapsed(startedAt)
     };
   }
 
-  let stdout = '';
-  let stderr = '';
-  let globals = null;
+  const id = ++pythonJobId;
+  const payload = await new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      stopPythonWorker(`Python timed out after ${PYTHON_TIMEOUT_MS / 1000}s and was stopped.`);
+      reject(new Error(`Execution timed out after ${PYTHON_TIMEOUT_MS / 1000}s. Check for infinite loops.`));
+    }, PYTHON_TIMEOUT_MS);
+    pythonJobs.set(id, { resolve, reject, timer });
+    worker.postMessage({ id, code: String(code || '') });
+  }).catch((error) => ({
+    ok: false,
+    output: '',
+    error: (error && error.message) || String(error)
+  }));
 
-  try {
-    pyodide.setStdout({
-      batched: (text) => {
-        const chunk = String(text === undefined || text === null ? '' : text);
-        stdout += chunk.endsWith('\n') ? chunk : `${chunk}\n`;
-      }
-    });
-    pyodide.setStderr({
-      batched: (text) => {
-        const chunk = String(text === undefined || text === null ? '' : text);
-        stderr += chunk.endsWith('\n') ? chunk : `${chunk}\n`;
-      }
-    });
-
-    // Fresh namespace per run so stages cannot leak variables into each other.
-    try {
-      if (typeof pyodide.toPy === 'function') {
-        globals = pyodide.toPy({ __name__: '__main__' });
-      }
-    } catch {
-      globals = null;
-    }
-
-    await withTimeout(
-      pyodide.runPythonAsync(String(code || ''), globals ? { globals } : undefined),
-      PYTHON_TIMEOUT_MS,
-      `Execution timed out after ${PYTHON_TIMEOUT_MS / 1000}s. Check for infinite loops.`
-    );
-
-    return {
-      ok: normalizeOutput(stderr) === '',
-      output: normalizeOutput(stdout),
-      error: normalizeOutput(stderr),
-      mode: 'real',
-      durationMs: elapsed(startedAt)
-    };
-  } catch (error) {
-    const message = (error && (error.message || error.toString())) || String(error);
+  if (payload.fatal) {
+    stopPythonWorker(payload.error || 'Python engine failed to load.');
     return {
       ok: false,
-      output: normalizeOutput(stdout),
-      error: normalizeOutput(stderr) || message,
-      mode: 'real',
+      output: normalizeOutput(payload.stdout || ''),
+      error: `Python engine could not be loaded — check your connection. (${payload.error})`,
+      mode: 'unavailable',
       durationMs: elapsed(startedAt)
     };
-  } finally {
-    if (globals && typeof globals.destroy === 'function') {
-      try {
-        globals.destroy();
-      } catch {
-        // ignore proxy cleanup failures
-      }
-    }
   }
+
+  return {
+    ok: Boolean(payload.ok) && normalizeOutput(payload.stderr || '') === '',
+    output: normalizeOutput(payload.stdout || ''),
+    error: normalizeOutput(payload.stderr || '') || (payload.ok ? '' : normalizeOutput(payload.error || '')),
+    mode: 'real',
+    durationMs: elapsed(startedAt)
+  };
 }
 
 // Syllabus C++ stages after #5 ship bare snippets (no main/include). Wrap them

@@ -468,10 +468,11 @@ export const TRANSLATIONS = {
   }
 };
 
-// Hint cost formula: base cost * stage number
+// Hint cost formula: cheap enough to stay useful, capped so late stages do
+// not cost more than a stage clear reward.
 export const getHintCost = (stageNumber) => {
   const BASE_HINT_COST = 25;
-  return BASE_HINT_COST * stageNumber;
+  return Math.min(BASE_HINT_COST + Math.max(0, Number(stageNumber) - 1) * 3, 60);
 };
 
 // Get translated text

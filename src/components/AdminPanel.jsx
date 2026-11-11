@@ -1,173 +1,279 @@
-import React, { useState } from 'react';
-import { X, ShieldAlert, Users, Database, AlertTriangle, CheckCircle, Ban } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Ban, Database, Inbox, ShieldAlert, Users } from 'lucide-react';
+import NeoModal from './ui/NeoModal';
+import NeoButton from './ui/NeoButton';
+import NeoBadge from './ui/NeoBadge';
+import { useToast } from './ui/toast-context';
+
+const INITIAL_AUDIT_LOGS = [
+  {
+    id: 'LOG-8812',
+    user: 'bot_runner_01',
+    type: 'RAPID_SUBMISSION_BOT',
+    detail: 'Completed stage in 240ms with 0 keystrokes',
+    ip: '182.253.11.44',
+    time: '2m ago',
+    severity: 'HIGH',
+  },
+  {
+    id: 'LOG-8813',
+    user: 'script_kiddie',
+    type: 'PAYLOAD_INJECTION_SQLI',
+    detail: "Submitted: '; DROP TABLE stages;--",
+    ip: '114.124.8.190',
+    time: '14m ago',
+    severity: 'CRITICAL',
+  },
+  {
+    id: 'LOG-8814',
+    user: 'exploit_test',
+    type: 'STAGE_SKIP_ATTEMPT',
+    detail: 'Tried unlocking Stage 15 with 0 prior cleared stages',
+    ip: '36.85.92.10',
+    time: '1h ago',
+    severity: 'HIGH',
+  },
+  {
+    id: 'LOG-8815',
+    user: 'BitMaster_99',
+    type: 'CLEAN_VERIFICATION',
+    detail: 'Cleared Stage 5 C++ via authoritative AST check',
+    ip: '103.21.244.1',
+    time: '2h ago',
+    severity: 'OK',
+  },
+];
+
+const TABS = [
+  { id: 'anticheat', label: 'Anti-Cheat Logs', icon: ShieldAlert },
+  { id: 'users', label: 'User Management', icon: Users },
+  { id: 'metrics', label: 'Database Stats', icon: Database },
+];
+
+const USERS = [
+  { id: 'u1', name: 'PixelKnight (Current User)', meta: 'Role: Admin / Developer', status: 'ACTIVE', tone: 'olive' },
+  { id: 'u2', name: 'BitMaster_99', meta: 'Total XP: 4,250 • Cleared: 15 Stages', status: 'VERIFIED', tone: 'success' },
+];
+
+function EmptyState({ title, hint }) {
+  return (
+    <div className="flex flex-col items-center gap-2 border-2 border-dashed border-[#1E2522] bg-[#F3F6F4] p-6 text-center font-mono">
+      <Inbox className="h-7 w-7 text-[#7D8D39]" aria-hidden="true" />
+      <p className="text-xs font-extrabold uppercase text-[#1E2522]">{title}</p>
+      <p className="max-w-xs text-[11px] text-gray-600">{hint}</p>
+    </div>
+  );
+}
 
 export default function AdminPanel({ isOpen, onClose }) {
-  const [activeTab, setActiveTab] = useState('anticheat'); // 'anticheat' | 'users' | 'metrics'
+  const [activeTab, setActiveTab] = useState('anticheat');
+  const [auditLogs, setAuditLogs] = useState(INITIAL_AUDIT_LOGS);
+  const tabRefs = useRef({});
+  const toast = useToast();
 
-  if (!isOpen) return null;
+  const handleTabKeyDown = (event) => {
+    const currentIndex = TABS.findIndex((tab) => tab.id === activeTab);
+    let nextIndex = currentIndex;
 
-  // Mock anti-cheat logs
-  const auditLogs = [
-    { id: 'LOG-8812', user: 'bot_runner_01', type: 'RAPID_SUBMISSION_BOT', detail: 'Completed stage in 240ms with 0 keystrokes', ip: '182.253.11.44', time: '2m ago', severity: 'HIGH' },
-    { id: 'LOG-8813', user: 'script_kiddie', type: 'PAYLOAD_INJECTION_SQLI', detail: "Submitted: '; DROP TABLE stages;--", ip: '114.124.8.190', time: '14m ago', severity: 'CRITICAL' },
-    { id: 'LOG-8814', user: 'exploit_test', type: 'STAGE_SKIP_ATTEMPT', detail: 'Tried unlocking Stage 15 with 0 prior cleared stages', ip: '36.85.92.10', time: '1h ago', severity: 'HIGH' },
-    { id: 'LOG-8815', user: 'BitMaster_99', type: 'CLEAN_VERIFICATION', detail: 'Cleared Stage 5 C++ via authoritative AST check', ip: '103.21.244.1', time: '2h ago', severity: 'OK' }
-  ];
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % TABS.length;
+    else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + TABS.length) % TABS.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = TABS.length - 1;
+    else return;
+
+    event.preventDefault();
+    const nextTab = TABS[nextIndex];
+    setActiveTab(nextTab.id);
+    tabRefs.current[nextTab.id]?.focus();
+  };
+
+  const handleBlock = (log) => {
+    setAuditLogs((prev) => prev.filter((entry) => entry.id !== log.id));
+    toast.warning('Mitigation applied', {
+      description: `${log.ip} blocked and ${log.user}'s score was reset.`,
+    });
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="w-full max-w-3xl bg-white border-4 border-[#1E2522] shadow-[8px_8px_0px_#1E2522] overflow-hidden">
-        
-        {/* Header */}
-        <div className="bg-[#1E2522] text-white p-4 flex items-center justify-between border-b-4 border-[#1E2522]">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="w-6 h-6 text-[#EF4444]" />
-            <div>
-              <h2 className="font-extrabold text-lg uppercase tracking-tight">
-                Admin Console // Anti-Cheat Security Hub
-              </h2>
-              <p className="text-[11px] font-mono text-gray-300">
-                Authoritative Server Logs & Database Invariant Monitor
-              </p>
-            </div>
-          </div>
-          <button 
-            onClick={onClose}
-            className="w-8 h-8 bg-[#EF4444] text-white border-2 border-black flex items-center justify-center font-bold hover:bg-[#DC2626]"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Tab Switcher */}
-        <div className="bg-[#F3F6F4] px-4 pt-3 flex gap-2 border-b-3 border-[#1E2522]">
-          <button
-            onClick={() => setActiveTab('anticheat')}
-            className={`px-3 py-1.5 font-mono text-xs font-bold uppercase border-t-2 border-l-2 border-r-2 border-[#1E2522] ${
-              activeTab === 'anticheat' ? 'bg-white -mb-[3px] border-b-0 text-[#1E2522]' : 'bg-gray-200 text-gray-600'
-            }`}
-          >
-            Anti-Cheat Logs ({auditLogs.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`px-3 py-1.5 font-mono text-xs font-bold uppercase border-t-2 border-l-2 border-r-2 border-[#1E2522] ${
-              activeTab === 'users' ? 'bg-white -mb-[3px] border-b-0 text-[#1E2522]' : 'bg-gray-200 text-gray-600'
-            }`}
-          >
-            User Management
-          </button>
-          <button
-            onClick={() => setActiveTab('metrics')}
-            className={`px-3 py-1.5 font-mono text-xs font-bold uppercase border-t-2 border-l-2 border-r-2 border-[#1E2522] ${
-              activeTab === 'metrics' ? 'bg-white -mb-[3px] border-b-0 text-[#1E2522]' : 'bg-gray-200 text-gray-600'
-            }`}
-          >
-            Database Stats
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <div className="p-4 max-h-[60vh] overflow-y-auto">
-          {activeTab === 'anticheat' && (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between font-mono text-xs text-gray-600 mb-1">
-                <span>Real-Time Edge Function Security Audit</span>
-                <span className="text-[#10B981] font-bold">● System Active</span>
-              </div>
-
-              {auditLogs.map(log => (
-                <div 
-                  key={log.id} 
-                  className={`p-3 border-2 border-[#1E2522] ${
-                    log.severity === 'CRITICAL' 
-                      ? 'bg-[#FEE2E2]' 
-                      : log.severity === 'HIGH' 
-                        ? 'bg-[#FEF3C7]' 
-                        : 'bg-[#ECFDF5]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-mono text-xs font-bold text-[#1E2522]">
-                      {log.id} • {log.user} ({log.ip})
-                    </span>
-                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border border-[#1E2522] ${
-                      log.severity === 'CRITICAL' ? 'bg-[#EF4444] text-white' : log.severity === 'HIGH' ? 'bg-[#F59E0B] text-black' : 'bg-[#10B981] text-white'
-                    }`}>
-                      {log.type}
-                    </span>
-                  </div>
-                  <p className="font-mono text-xs text-[#1E2522] mb-1">
-                    {log.detail}
-                  </p>
-                  <div className="flex items-center justify-between text-[10px] font-mono text-gray-500">
-                    <span>Detected {log.time}</span>
-                    {log.severity !== 'OK' && (
-                      <button className="text-red-700 font-bold hover:underline flex items-center gap-1">
-                        <Ban className="w-3 h-3" /> Block IP / Reset Score
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === 'users' && (
-            <div className="font-mono text-xs space-y-2">
-              <div className="p-3 bg-gray-50 border-2 border-[#1E2522] flex justify-between items-center">
-                <div>
-                  <strong>PixelKnight (Current User)</strong>
-                  <div className="text-gray-500 text-[11px]">Role: Admin / Developer</div>
-                </div>
-                <span className="px-2 py-0.5 bg-[#7D8D39] text-white font-bold text-[10px] border border-black">
-                  ACTIVE
-                </span>
-              </div>
-              <div className="p-3 bg-gray-50 border-2 border-[#1E2522] flex justify-between items-center">
-                <div>
-                  <strong>BitMaster_99</strong>
-                  <div className="text-gray-500 text-[11px]">Total XP: 4,250 • Cleared: 15 Stages</div>
-                </div>
-                <span className="px-2 py-0.5 bg-green-600 text-white font-bold text-[10px] border border-black">
-                  VERIFIED
-                </span>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'metrics' && (
-            <div className="grid grid-cols-3 gap-3 font-mono text-center">
-              <div className="p-3 bg-[#E7EEDB] border-2 border-[#1E2522]">
-                <div className="text-2xl font-bold text-[#586526]">45</div>
-                <div className="text-[11px] uppercase font-bold mt-1">Curriculum Stages</div>
-              </div>
-              <div className="p-3 bg-[#FEF3C7] border-2 border-[#1E2522]">
-                <div className="text-2xl font-bold text-[#B45309]">99.9%</div>
-                <div className="text-[11px] uppercase font-bold mt-1">RLS Policy Coverage</div>
-              </div>
-              <div className="p-3 bg-[#FEE2E2] border-2 border-[#1E2522]">
-                <div className="text-2xl font-bold text-[#DC2626]">0</div>
-                <div className="text-[11px] uppercase font-bold mt-1">Breaches Detected</div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="bg-[#F3F6F4] p-3 border-t-3 border-[#1E2522] flex items-center justify-between font-mono text-xs">
-          <span className="text-gray-600">
-            Powered by Supabase PostgreSQL Security Engine
-          </span>
-          <button
-            onClick={onClose}
-            className="neo-button text-xs py-1 px-4 bg-[#1E2522] text-white hover:bg-[#333E39]"
-          >
+    <NeoModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Admin Console // Anti-Cheat Security Hub"
+      description="Authoritative server logs & database invariant monitor"
+      icon={<ShieldAlert className="h-6 w-6 text-[#EF4444]" aria-hidden="true" />}
+      size="xl"
+      headerClassName="bg-[#1E2522] text-white"
+      footer={
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="min-w-0 break-words text-gray-600">Powered by Supabase PostgreSQL Security Engine</span>
+          <NeoButton variant="dark" size="sm" onClick={onClose}>
             Dismiss
-          </button>
+          </NeoButton>
+        </div>
+      }
+    >
+      <div className="flex flex-col font-mono text-xs">
+        <div
+          role="tablist"
+          aria-label="Admin console sections"
+          className="flex gap-1.5 overflow-x-auto border-b-3 border-[#1E2522] bg-[#F3F6F4] px-1 pt-1 no-scrollbar sm:gap-2 sm:px-2"
+        >
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            const count = tab.id === 'anticheat' ? ` (${auditLogs.length})` : '';
+            return (
+              <button
+                key={tab.id}
+                ref={(node) => {
+                  tabRefs.current[tab.id] = node;
+                }}
+                id={`admin-tab-${tab.id}`}
+                role="tab"
+                type="button"
+                aria-selected={isActive}
+                aria-controls={`admin-panel-${tab.id}`}
+                tabIndex={isActive ? 0 : -1}
+                onClick={() => setActiveTab(tab.id)}
+                onKeyDown={handleTabKeyDown}
+                className={`flex min-h-11 shrink-0 items-center gap-1.5 border-2 border-b-0 border-[#1E2522] px-2.5 py-1.5 text-[10px] font-bold uppercase transition-colors sm:px-3 sm:text-xs ${
+                  isActive
+                    ? 'translate-y-[2px] bg-white text-[#1E2522]'
+                    : 'bg-[#E3EBD0] text-gray-600 hover:bg-white'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                <span>
+                  {tab.label}
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
+        <div className="pt-3">
+          {activeTab === 'anticheat' ? (
+            <div
+              role="tabpanel"
+              id="admin-panel-anticheat"
+              aria-labelledby="admin-tab-anticheat"
+              tabIndex={0}
+              className="flex flex-col gap-3 focus-visible:outline-none"
+            >
+              <div className="mb-0.5 flex flex-wrap items-center justify-between gap-1 text-[11px] text-gray-600">
+                <span>Real-Time Edge Function Security Audit</span>
+                <span className="font-bold text-[#047857]">● System Active</span>
+              </div>
+
+              {auditLogs.length === 0 ? (
+                <EmptyState
+                  title="No audit events"
+                  hint="The anti-cheat queue is clear. New suspicious submissions will appear here in real time."
+                />
+              ) : (
+                auditLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className={`border-2 border-[#1E2522] p-2.5 sm:p-3 ${
+                      log.severity === 'CRITICAL'
+                        ? 'bg-[#FEE2E2]'
+                        : log.severity === 'HIGH'
+                          ? 'bg-[#FEF3C7]'
+                          : 'bg-[#ECFDF5]'
+                    }`}
+                  >
+                    <div className="mb-1 flex flex-wrap items-center justify-between gap-1">
+                      <span className="min-w-0 break-words text-[11px] font-bold text-[#1E2522]">
+                        {log.id} • {log.user} ({log.ip})
+                      </span>
+                      <NeoBadge
+                        tone={
+                          log.severity === 'CRITICAL' ? 'danger' : log.severity === 'HIGH' ? 'amber' : 'success'
+                        }
+                        size="sm"
+                      >
+                        {log.type}
+                      </NeoBadge>
+                    </div>
+                    <p className="mb-1 break-words text-[11px] text-[#1E2522]">{log.detail}</p>
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-gray-600">
+                      <span>Detected {log.time}</span>
+                      {log.severity !== 'OK' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleBlock(log)}
+                          className="flex min-h-11 items-center gap-1 border-2 border-[#1E2522] bg-white px-2 font-bold text-red-700 transition-colors hover:bg-red-100"
+                        >
+                          <Ban className="h-3.5 w-3.5" aria-hidden="true" />
+                          Block IP / Reset Score
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : null}
+
+          {activeTab === 'users' ? (
+            <div
+              role="tabpanel"
+              id="admin-panel-users"
+              aria-labelledby="admin-tab-users"
+              tabIndex={0}
+              className="space-y-2 focus-visible:outline-none"
+            >
+              {USERS.length === 0 ? (
+                <EmptyState
+                  title="No users loaded"
+                  hint="User records will appear once profiles are fetched from Supabase."
+                />
+              ) : (
+                USERS.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex flex-col gap-2 border-2 border-[#1E2522] bg-gray-50 p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <strong className="break-words text-[#1E2522]">{user.name}</strong>
+                      <div className="text-[11px] text-gray-500">{user.meta}</div>
+                    </div>
+                    <NeoBadge tone={user.tone} size="sm" className="self-start sm:self-auto">
+                      {user.status}
+                    </NeoBadge>
+                  </div>
+                ))
+              )}
+            </div>
+          ) : null}
+
+          {activeTab === 'metrics' ? (
+            <div
+              role="tabpanel"
+              id="admin-panel-metrics"
+              aria-labelledby="admin-tab-metrics"
+              tabIndex={0}
+              className="focus-visible:outline-none"
+            >
+              <div className="grid grid-cols-1 gap-3 text-center sm:grid-cols-3">
+                <div className="border-2 border-[#1E2522] bg-[#E7EEDB] p-3">
+                  <div className="text-2xl font-bold text-[#586526]">45</div>
+                  <div className="mt-1 text-[11px] font-bold uppercase">Curriculum Stages</div>
+                </div>
+                <div className="border-2 border-[#1E2522] bg-[#FEF3C7] p-3">
+                  <div className="text-2xl font-bold text-[#B45309]">99.9%</div>
+                  <div className="mt-1 text-[11px] font-bold uppercase">RLS Policy Coverage</div>
+                </div>
+                <div className="border-2 border-[#1E2522] bg-[#FEE2E2] p-3">
+                  <div className="text-2xl font-bold text-[#DC2626]">0</div>
+                  <div className="mt-1 text-[11px] font-bold uppercase">Breaches Detected</div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </NeoModal>
   );
 }

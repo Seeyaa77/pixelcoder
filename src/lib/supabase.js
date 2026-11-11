@@ -172,6 +172,35 @@ export const fetchLiveLeaderboard = async () => {
   }
 }
 
+// Admin overview: deliberately excludes email and other PII, because this
+// runs with the public anon key. Moderation still requires a service role.
+const ADMIN_COLUMNS = [
+  'id',
+  'username',
+  'role',
+  'total_xp',
+  'gold',
+  'current_streak',
+  'cleared_stages',
+  'created_at',
+  'updated_at',
+].join(', ')
+
+export const fetchAdminOverview = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('pixelcoder_profiles')
+      .select(ADMIN_COLUMNS)
+      .order('total_xp', { ascending: false })
+      .limit(500)
+
+    if (error) return { players: [], error: `Could not load players: ${error.message}` }
+    return { players: (data || []).map((row) => sanitizeUser(row)), error: null }
+  } catch (err) {
+    return { players: [], error: (err && err.message) || 'Network error while loading players.' }
+  }
+}
+
 /* ------------------------------------------------------------------ */
 /* Registration                                                        */
 /* ------------------------------------------------------------------ */

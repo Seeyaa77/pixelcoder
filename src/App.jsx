@@ -1,14 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import GameCanvas from './components/GameCanvas';
 import StageSelector from './components/StageSelector';
 import CodePlayground from './components/CodePlayground';
-import LeaderboardModal from './components/LeaderboardModal';
-import AdminPanel from './components/AdminPanel';
-import AuthModal from './components/AuthModal';
-import InventoryModal from './components/InventoryModal';
 import HomePage from './components/HomePage';
-import HowToPlay, { hasSeenHowToPlay } from './components/HowToPlay';
+import { hasSeenHowToPlay, wasOnboardingShownThisSession, markOnboardingShownThisSession, clearOnboardingSession } from './lib/onboarding';
 import { useToast } from './components/ui/Toast';
 import { SYLLABUS_TRACKS } from './data/syllabus';
 import { getStoredSession, saveStoredSession, clearStoredSession, syncProgressToBackend } from './lib/supabase';
@@ -29,7 +25,43 @@ import {
 import { Heart } from 'lucide-react';
 import { PixelCoinIcon } from './components/Icons';
 
-const ONBOARD_SESSION_KEY = 'pixelcoder_howto_shown_session';
+// Modals are code-split: they only download when the player opens them.
+const LeaderboardModal = lazy(() => import('./components/LeaderboardModal'));
+const AdminPanel = lazy(() => import('./components/AdminPanel'));
+const AuthModal = lazy(() => import('./components/AuthModal'));
+const InventoryModal = lazy(() => import('./components/InventoryModal'));
+const HowToPlay = lazy(() => import('./components/HowToPlay'));
+
+const UI_COPY = {
+  en: {
+    locked: (n) => `Stage ${n} is locked. Clear the previous stage first!`,
+    noPotion: 'No potions left! Buy one in the Inventory.',
+    hpFull: 'Your HP is already full.',
+    noGoldPotion: 'Not enough gold for a potion (50 needed).',
+    noGoldWeapon: 'Not enough gold to buy this weapon!',
+    noGoldHint: 'Not enough gold to buy a hint.',
+    hintUnlocked: 'Hint unlocked',
+    hintUnlockedDetail: 'This hint stays unlocked for this stage.',
+    guestOn: 'Guest mode active',
+    guestOnDetail: 'Progress is saved in this browser. Register any time to keep it on your account.',
+    guestBanner: 'GUEST MODE — progress is only saved in this browser.',
+    saveToAccount: 'Save to account'
+  },
+  id: {
+    locked: (n) => `Stage ${n} masih terkunci. Selesaikan stage sebelumnya dulu!`,
+    noPotion: 'Potion habis! Beli potion dulu di Inventory.',
+    hpFull: 'HP kamu sudah penuh.',
+    noGoldPotion: 'Gold tidak cukup untuk membeli potion (butuh 50).',
+    noGoldWeapon: 'Gold tidak cukup untuk membeli senjata ini!',
+    noGoldHint: 'Gold tidak cukup untuk membeli hint.',
+    hintUnlocked: 'Hint terbuka',
+    hintUnlockedDetail: 'Hint ini tersimpan permanen untuk stage ini.',
+    guestOn: 'Mode tamu aktif',
+    guestOnDetail: 'Progres tersimpan di browser ini. Daftar kapan saja untuk menyimpannya ke akun.',
+    guestBanner: 'MODE TAMU — progres hanya tersimpan di browser ini.',
+    saveToAccount: 'Simpan ke akun'
+  }
+};
 
 export default function App() {
   const toast = useToast();
@@ -50,6 +82,7 @@ export default function App() {
   const [monsterHp, setMonsterHp] = useState(100);
 
   // Modals
+  const ui = UI_COPY[language] || UI_COPY.en;
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -85,15 +118,10 @@ export default function App() {
   // First-run onboarding: auto-open once per session for signed-in players.
   useEffect(() => {
     if (!playerState.isLoggedIn) return;
-    try {
-      const alreadyShown = sessionStorage.getItem(ONBOARD_SESSION_KEY) === '1';
-      if (!alreadyShown && !hasSeenHowToPlay()) {
-        sessionStorage.setItem(ONBOARD_SESSION_KEY, '1');
-        // eslint-disable-next-line react/set-state-in-effect -- onboarding opens once per session, driven by storage
-        setIsHowToOpen(true);
-      }
-    } catch {
-      if (!hasSeenHowToPlay()) setIsHowToOpen(true);
+    if (!wasOnboardingShownThisSession() && !hasSeenHowToPlay()) {
+      markOnboardingShownThisSession();
+      // eslint-disable-next-line react/set-state-in-effect -- onboarding opens once per session, driven by storage
+      setIsHowToOpen(true);
     }
   }, [playerState.isLoggedIn]);
 
@@ -128,7 +156,7 @@ export default function App() {
 
   const handleSelectStage = (stageNumber) => {
     if (!isStageUnlocked(playerState, currentTrackId, stageNumber)) {
-      toast.warning(`Stage ${stageNumber} masih terkunci. Selesaikan stage sebelumnya dulu!`);
+      toast.warning(ui.locked(stageNumber));
       return;
     }
     setCurrentStageNumber(stageNumber);
@@ -137,11 +165,11 @@ export default function App() {
   // Inventory & Consumable Actions
   const handleUsePotion = () => {
     if (playerState.potions <= 0) {
-      toast.warning('Potion habis! Beli potion dulu di Inventory.');
+      toast.warning(ui.noPotion);
       return;
     }
     if (playerState.hp >= playerState.max_hp) {
-      toast.info('HP kamu sudah penuh.');
+      toast.info(ui.hpFull);
       return;
     }
     setPlayerState(prev => drinkPotion(prev));
@@ -149,7 +177,7 @@ export default function App() {
 
   const handleBuyPotion = () => {
     if (playerState.gold < 50) {
-      toast.error('Gold tidak cukup untuk membeli potion (butuh 50).');
+      toast.error(ui.noGoldPotion);
       return;
     }
     setPlayerState(prev => buyPotion(prev));
@@ -161,7 +189,7 @@ export default function App() {
       ? playerState.ownedWeapons
       : ['Pixel Blade'];
     if (!owned.includes(weapon.name) && playerState.gold < weapon.cost) {
-      toast.error('Gold tidak cukup untuk membeli senjata ini!');
+      toast.error(ui.noGoldWeapon);
       return;
     }
     setPlayerState(prev => equipWeapon(prev, weapon));
@@ -170,12 +198,12 @@ export default function App() {
   const handleBuyHint = (cost) => {
     const key = hintKey(currentTrackId, currentStageNumber);
     if (playerState.gold < cost) {
-      toast.error('Gold tidak cukup untuk membeli hint.');
+      toast.error(ui.noGoldHint);
       return;
     }
     if ((playerState.hintsUnlocked || []).includes(key)) return;
     setPlayerState(prev => unlockHint(prev, key, cost));
-    toast.success('Hint unlocked', { description: 'Hint ini tersimpan permanen untuk stage ini.' });
+    toast.success(ui.hintUnlocked, { description: ui.hintUnlockedDetail });
   };
 
   const handleSelectCharacter = (charName) => {
@@ -222,18 +250,12 @@ export default function App() {
       username: 'Guest',
       character_name: 'Royal Soldier'
     });
-    toast.success('Mode tamu aktif', {
-      description: 'Progres tersimpan di browser ini. Daftar kapan saja untuk menyimpannya ke akun.'
-    });
+    toast.success(ui.guestOn, { description: ui.guestOnDetail });
   };
 
   const handleSignOut = () => {
     clearStoredSession();
-    try {
-      sessionStorage.removeItem(ONBOARD_SESSION_KEY);
-    } catch {
-      /* ignore */
-    }
+    clearOnboardingSession();
     setPlayerState(createDefaultProgress());
   };
 
@@ -284,14 +306,14 @@ export default function App() {
         <div className="border-b-2 border-[#1E2522] bg-[#FEF08A] px-3 py-1.5 font-mono text-[10px] sm:text-xs">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2">
             <span className="font-bold text-[#854D0E]">
-              MODE TAMU — progres hanya tersimpan di browser ini.
+              {ui.guestBanner}
             </span>
             <button
               type="button"
               onClick={() => openAuthWithMode('register')}
               className="neo-button bg-[#7D8D39] px-2 py-1 text-[10px] font-bold uppercase text-white hover:bg-[#8fa042] sm:text-xs"
             >
-              Simpan ke akun
+              {ui.saveToAccount}
             </button>
           </div>
         </div>
@@ -412,28 +434,29 @@ export default function App() {
       </footer>
 
       {/* Modals */}
-      <LeaderboardModal
+      <Suspense fallback={null}>
+      {isLeaderboardOpen && <LeaderboardModal
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
         currentUsername={playerState.username}
-      />
+      />}
 
-      {playerState.role === 'admin' && (
+      {playerState.role === 'admin' && isAdminOpen && (
         <AdminPanel
           isOpen={isAdminOpen}
           onClose={() => setIsAdminOpen(false)}
         />
       )}
 
-      <AuthModal
+      {isAuthOpen && <AuthModal
         isOpen={isAuthOpen}
         initialMode={authMode}
         language={language}
         onClose={() => setIsAuthOpen(false)}
         onAuthSuccess={handleAuthSuccess}
-      />
+      />}
 
-      <InventoryModal
+      {isInventoryOpen && <InventoryModal
         isOpen={isInventoryOpen}
         onClose={() => setIsInventoryOpen(false)}
         playerState={playerState}
@@ -441,9 +464,9 @@ export default function App() {
         onSelectCharacter={handleSelectCharacter}
         onUsePotion={handleUsePotion}
         onBuyPotion={handleBuyPotion}
-      />
+      />}
 
-      <HowToPlay
+      {isHowToOpen && <HowToPlay
         isOpen={isHowToOpen}
         onClose={() => setIsHowToOpen(false)}
         language={language}
@@ -451,7 +474,8 @@ export default function App() {
           setIsHowToOpen(false);
           openAuthWithMode('login');
         }}
-      />
+      />}
+      </Suspense>
 
     </div>
   );

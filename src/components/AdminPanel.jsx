@@ -1,278 +1,244 @@
-import React, { useRef, useState } from 'react';
-import { Ban, Database, Inbox, ShieldAlert, Users } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, Database, RefreshCw, ShieldCheck, Users } from 'lucide-react';
 import NeoModal from './ui/NeoModal';
-import NeoButton from './ui/NeoButton';
 import NeoBadge from './ui/NeoBadge';
-import { useToast } from './ui/toast-context';
-
-const INITIAL_AUDIT_LOGS = [
-  {
-    id: 'LOG-8812',
-    user: 'bot_runner_01',
-    type: 'RAPID_SUBMISSION_BOT',
-    detail: 'Completed stage in 240ms with 0 keystrokes',
-    ip: '182.253.11.44',
-    time: '2m ago',
-    severity: 'HIGH',
-  },
-  {
-    id: 'LOG-8813',
-    user: 'script_kiddie',
-    type: 'PAYLOAD_INJECTION_SQLI',
-    detail: "Submitted: '; DROP TABLE stages;--",
-    ip: '114.124.8.190',
-    time: '14m ago',
-    severity: 'CRITICAL',
-  },
-  {
-    id: 'LOG-8814',
-    user: 'exploit_test',
-    type: 'STAGE_SKIP_ATTEMPT',
-    detail: 'Tried unlocking Stage 15 with 0 prior cleared stages',
-    ip: '36.85.92.10',
-    time: '1h ago',
-    severity: 'HIGH',
-  },
-  {
-    id: 'LOG-8815',
-    user: 'BitMaster_99',
-    type: 'CLEAN_VERIFICATION',
-    detail: 'Cleared Stage 5 C++ via authoritative AST check',
-    ip: '103.21.244.1',
-    time: '2h ago',
-    severity: 'OK',
-  },
-];
+import Spinner from './ui/Spinner';
+import { fetchAdminOverview } from '../lib/supabase';
+import { summarizePlayers } from '../lib/admin';
+import { SYLLABUS_TRACKS } from '../data/syllabus';
 
 const TABS = [
-  { id: 'anticheat', label: 'Anti-Cheat Logs', icon: ShieldAlert },
-  { id: 'users', label: 'User Management', icon: Users },
-  { id: 'metrics', label: 'Database Stats', icon: Database },
+  { id: 'metrics', label: 'Metrics', icon: Database },
+  { id: 'users', label: 'Players', icon: Users },
+  { id: 'integrity', label: 'Integrity', icon: ShieldCheck }
 ];
 
-const USERS = [
-  { id: 'u1', name: 'PixelKnight (Current User)', meta: 'Role: Admin / Developer', status: 'ACTIVE', tone: 'olive' },
-  { id: 'u2', name: 'BitMaster_99', meta: 'Total XP: 4,250 • Cleared: 15 Stages', status: 'VERIFIED', tone: 'success' },
-];
+const SEVERITY_TONE = {
+  CRITICAL: 'danger',
+  HIGH: 'amber',
+  MEDIUM: 'amber',
+  LOW: 'neutral'
+};
 
-function EmptyState({ title, hint }) {
+function StatCard({ label, value, hint }) {
   return (
-    <div className="flex flex-col items-center gap-2 border-2 border-dashed border-[#1E2522] bg-[#F3F6F4] p-6 text-center font-mono">
-      <Inbox className="h-7 w-7 text-[#7D8D39]" aria-hidden="true" />
-      <p className="text-xs font-extrabold uppercase text-[#1E2522]">{title}</p>
-      <p className="max-w-xs text-[11px] text-gray-600">{hint}</p>
+    <div className="neo-box bg-white p-3">
+      <p className="font-mono text-[10px] font-bold uppercase tracking-wide text-[#586526]">{label}</p>
+      <p className="mt-1 font-mono text-2xl font-extrabold leading-none text-[#1E2522]">{value}</p>
+      {hint ? <p className="mt-1 font-mono text-[10px] text-gray-500">{hint}</p> : null}
     </div>
   );
 }
 
+function EmptyRow({ children }) {
+  return <p className="border-2 border-dashed border-[#1E2522] bg-[#F3F6F4] p-4 text-center font-mono text-xs">{children}</p>;
+}
+
+/**
+ * Read-only moderation dashboard.
+ *
+ * Everything shown here comes from the public profile rows fetched with the
+ * anon key, so it is intentionally read-only: banning, deleting or editing
+ * accounts needs a service-role key and must never run in the browser.
+ */
 export default function AdminPanel({ isOpen, onClose }) {
-  const [activeTab, setActiveTab] = useState('anticheat');
-  const [auditLogs, setAuditLogs] = useState(INITIAL_AUDIT_LOGS);
-  const tabRefs = useRef({});
-  const toast = useToast();
+  const [activeTab, setActiveTab] = useState('metrics');
+  const [players, setPlayers] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleTabKeyDown = (event) => {
-    const currentIndex = TABS.findIndex((tab) => tab.id === activeTab);
-    let nextIndex = currentIndex;
+  const summary = useMemo(() => summarizePlayers(players, SYLLABUS_TRACKS), [players]);
 
-    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % TABS.length;
-    else if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + TABS.length) % TABS.length;
-    else if (event.key === 'Home') nextIndex = 0;
-    else if (event.key === 'End') nextIndex = TABS.length - 1;
-    else return;
+  const load = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const result = await fetchAdminOverview();
+    if (result.error) {
+      setError(result.error);
+      setPlayers([]);
+    } else {
+      setPlayers(result.players);
+    }
+    setLoading(false);
+  }, []);
 
-    event.preventDefault();
-    const nextTab = TABS[nextIndex];
-    setActiveTab(nextTab.id);
-    tabRefs.current[nextTab.id]?.focus();
-  };
+  useEffect(() => {
+    if (!isOpen) return;
+    // eslint-disable-next-line react/set-state-in-effect -- fetching live rows when the modal opens
+    load();
+  }, [isOpen, load]);
 
-  const handleBlock = (log) => {
-    setAuditLogs((prev) => prev.filter((entry) => entry.id !== log.id));
-    toast.warning('Mitigation applied', {
-      description: `${log.ip} blocked and ${log.user}'s score was reset.`,
-    });
-  };
+  const totalStageSlots = summary.stats.players * 45;
 
   return (
-    <NeoModal
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Admin Console // Anti-Cheat Security Hub"
-      description="Authoritative server logs & database invariant monitor"
-      icon={<ShieldAlert className="h-6 w-6 text-[#EF4444]" aria-hidden="true" />}
-      size="xl"
-      headerClassName="bg-[#1E2522] text-white"
-      footer={
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="min-w-0 break-words text-gray-600">Powered by Supabase PostgreSQL Security Engine</span>
-          <NeoButton variant="dark" size="sm" onClick={onClose}>
-            Dismiss
-          </NeoButton>
+    <NeoModal isOpen={isOpen} onClose={onClose} title="Admin Console" icon={<ShieldCheck className="h-4 w-4" />} size="lg">
+      <div className="space-y-3 font-mono text-xs text-[#1E2522]">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-2 border-[#1E2522] bg-[#FEF3C7] px-2 py-1.5">
+          <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase text-[#92400E]">
+            <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+            Read-only view · moderation needs a server-side service key
+          </span>
+          <button
+            type="button"
+            onClick={load}
+            disabled={loading}
+            className="neo-button inline-flex items-center gap-1 bg-white px-2 py-1 text-[10px] font-bold uppercase disabled:opacity-60"
+          >
+            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+            Refresh
+          </button>
         </div>
-      }
-    >
-      <div className="flex flex-col font-mono text-xs">
-        <div
-          role="tablist"
-          aria-label="Admin console sections"
-          className="flex gap-1.5 overflow-x-auto border-b-3 border-[#1E2522] bg-[#F3F6F4] px-1 pt-1 no-scrollbar sm:gap-2 sm:px-2"
-        >
+
+        <div className="flex flex-wrap gap-1" role="tablist" aria-label="Admin sections">
           {TABS.map((tab) => {
             const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            const count = tab.id === 'anticheat' ? ` (${auditLogs.length})` : '';
+            const selected = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                ref={(node) => {
-                  tabRefs.current[tab.id] = node;
-                }}
-                id={`admin-tab-${tab.id}`}
-                role="tab"
                 type="button"
-                aria-selected={isActive}
-                aria-controls={`admin-panel-${tab.id}`}
-                tabIndex={isActive ? 0 : -1}
+                role="tab"
+                aria-selected={selected}
                 onClick={() => setActiveTab(tab.id)}
-                onKeyDown={handleTabKeyDown}
-                className={`flex min-h-11 shrink-0 items-center gap-1.5 border-2 border-b-0 border-[#1E2522] px-2.5 py-1.5 text-[10px] font-bold uppercase transition-colors sm:px-3 sm:text-xs ${
-                  isActive
-                    ? 'translate-y-[2px] bg-white text-[#1E2522]'
-                    : 'bg-[#E3EBD0] text-gray-600 hover:bg-white'
+                className={`inline-flex min-h-9 items-center gap-1.5 border-2 border-[#1E2522] px-2 py-1 text-[10px] font-bold uppercase ${
+                  selected ? 'bg-[#7D8D39] text-white' : 'bg-white hover:bg-[#E7EEDB]'
                 }`}
               >
                 <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>
-                  {tab.label}
-                  {count}
-                </span>
+                {tab.label}
+                {tab.id === 'integrity' && summary.anomalies.length > 0 ? (
+                  <span className="border border-current px-1 text-[9px]">{summary.anomalies.length}</span>
+                ) : null}
               </button>
             );
           })}
         </div>
 
-        <div className="pt-3">
-          {activeTab === 'anticheat' ? (
-            <div
-              role="tabpanel"
-              id="admin-panel-anticheat"
-              aria-labelledby="admin-tab-anticheat"
-              tabIndex={0}
-              className="flex flex-col gap-3 focus-visible:outline-none"
-            >
-              <div className="mb-0.5 flex flex-wrap items-center justify-between gap-1 text-[11px] text-gray-600">
-                <span>Real-Time Edge Function Security Audit</span>
-                <span className="font-bold text-[#047857]">● System Active</span>
-              </div>
+        {loading && (
+          <div className="flex items-center justify-center gap-2 p-6">
+            <Spinner label="Loading players" />
+            <span className="text-xs">Loading live players…</span>
+          </div>
+        )}
 
-              {auditLogs.length === 0 ? (
-                <EmptyState
-                  title="No audit events"
-                  hint="The anti-cheat queue is clear. New suspicious submissions will appear here in real time."
-                />
-              ) : (
-                auditLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className={`border-2 border-[#1E2522] p-2.5 sm:p-3 ${
-                      log.severity === 'CRITICAL'
-                        ? 'bg-[#FEE2E2]'
-                        : log.severity === 'HIGH'
-                          ? 'bg-[#FEF3C7]'
-                          : 'bg-[#ECFDF5]'
-                    }`}
-                  >
-                    <div className="mb-1 flex flex-wrap items-center justify-between gap-1">
-                      <span className="min-w-0 break-words text-[11px] font-bold text-[#1E2522]">
-                        {log.id} • {log.user} ({log.ip})
-                      </span>
-                      <NeoBadge
-                        tone={
-                          log.severity === 'CRITICAL' ? 'danger' : log.severity === 'HIGH' ? 'amber' : 'success'
-                        }
-                        size="sm"
-                      >
-                        {log.type}
-                      </NeoBadge>
-                    </div>
-                    <p className="mb-1 break-words text-[11px] text-[#1E2522]">{log.detail}</p>
-                    <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-gray-600">
-                      <span>Detected {log.time}</span>
-                      {log.severity !== 'OK' ? (
-                        <button
-                          type="button"
-                          onClick={() => handleBlock(log)}
-                          className="flex min-h-11 items-center gap-1 border-2 border-[#1E2522] bg-white px-2 font-bold text-red-700 transition-colors hover:bg-red-100"
-                        >
-                          <Ban className="h-3.5 w-3.5" aria-hidden="true" />
-                          Block IP / Reset Score
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                ))
-              )}
+        {!loading && error && (
+          <div className="space-y-2 border-2 border-[#1E2522] bg-[#FEE2E2] p-3">
+            <p className="text-xs font-bold text-[#991B1B]">{error}</p>
+            <p className="text-[10px] text-[#991B1B]">
+              The anon key can only read public columns. Check the Supabase URL/key in .env, then retry.
+            </p>
+          </div>
+        )}
+
+        {!loading && !error && activeTab === 'metrics' && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <StatCard label="Players" value={summary.stats.players} hint="all rows readable with the anon key" />
+              <StatCard label="Total XP" value={summary.stats.totalXp.toLocaleString('en-US')} hint={`ceiling ${summary.stats.xpCeiling.toLocaleString('en-US')} XP`} />
+              <StatCard label="Avg XP" value={summary.stats.avgXp.toLocaleString('en-US')} hint="mean across players" />
+              <StatCard label="Stages cleared" value={summary.stats.totalCleared} hint={`${summary.stats.avgCleared} per player`} />
             </div>
-          ) : null}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <StatCard label="New (24h)" value={summary.stats.newlyJoined} />
+              <StatCard label="Active (24h)" value={summary.stats.activeRecently} />
+              <StatCard label="Completion" value={totalStageSlots ? `${Math.round((summary.stats.totalCleared / totalStageSlots) * 100)}%` : '—'} hint="cleared ÷ 45 per player" />
+              <StatCard label="Anomalies" value={summary.anomalies.length} />
+            </div>
+            <div className="neo-box bg-white p-3">
+              <h3 className="mb-2 text-[10px] font-bold uppercase text-[#586526]">Cleared stages by track</h3>
+              {['python', 'cpp', 'javascript'].map((trackId) => {
+                const value = summary.stats.byTrack[trackId] || 0;
+                const max = Math.max(1, ...Object.values(summary.stats.byTrack));
+                return (
+                  <div key={trackId} className="mb-1.5 flex items-center gap-2 text-[10px]">
+                    <span className="w-20 uppercase">{trackId}</span>
+                    <span className="h-3 flex-1 border-2 border-[#1E2522] bg-[#F3F6F4]">
+                      <span className="block h-full bg-[#7D8D39]" style={{ width: `${Math.round((value / max) * 100)}%` }} />
+                    </span>
+                    <span className="w-8 text-right font-bold">{value}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-          {activeTab === 'users' ? (
-            <div
-              role="tabpanel"
-              id="admin-panel-users"
-              aria-labelledby="admin-tab-users"
-              tabIndex={0}
-              className="space-y-2 focus-visible:outline-none"
-            >
-              {USERS.length === 0 ? (
-                <EmptyState
-                  title="No users loaded"
-                  hint="User records will appear once profiles are fetched from Supabase."
-                />
-              ) : (
-                USERS.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex flex-col gap-2 border-2 border-[#1E2522] bg-gray-50 p-3 sm:flex-row sm:items-center sm:justify-between"
+        {!loading && !error && activeTab === 'users' && (
+          <div className="space-y-2">
+            {summary.table.length === 0 ? (
+              <EmptyRow>No players yet. Sign-ups will appear here.</EmptyRow>
+            ) : (
+              <div className="max-h-[360px] overflow-auto border-2 border-[#1E2522]">
+                <table className="w-full border-collapse text-left text-[10px]">
+                  <thead className="sticky top-0 bg-[#E7EEDB] text-[9px] uppercase">
+                    <tr>
+                      <th className="border-b-2 border-[#1E2522] px-2 py-1.5">Player</th>
+                      <th className="border-b-2 border-[#1E2522] px-2 py-1.5">Role</th>
+                      <th className="border-b-2 border-[#1E2522] px-2 py-1.5 text-right">XP</th>
+                      <th className="border-b-2 border-[#1E2522] px-2 py-1.5 text-right">Cleared</th>
+                      <th className="border-b-2 border-[#1E2522] px-2 py-1.5 text-right">Gold</th>
+                      <th className="border-b-2 border-[#1E2522] px-2 py-1.5 text-right">Streak</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summary.table.map((row) => (
+                      <tr key={row.id} className="odd:bg-white even:bg-[#F3F6F4]">
+                        <td className="border-b border-[#1E2522]/20 px-2 py-1 font-bold">{row.username}</td>
+                        <td className="border-b border-[#1E2522]/20 px-2 py-1">
+                          <NeoBadge tone={row.role === 'admin' ? 'olive' : 'neutral'} size="sm">
+                            {row.role}
+                          </NeoBadge>
+                        </td>
+                        <td className="border-b border-[#1E2522]/20 px-2 py-1 text-right">{row.xp.toLocaleString('en-US')}</td>
+                        <td className="border-b border-[#1E2522]/20 px-2 py-1 text-right">
+                          {row.clearedCount}
+                          <span className="text-gray-500">/45</span>
+                        </td>
+                        <td className="border-b border-[#1E2522]/20 px-2 py-1 text-right">{row.gold.toLocaleString('en-US')}</td>
+                        <td className="border-b border-[#1E2522]/20 px-2 py-1 text-right">{row.streak}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="text-[10px] text-gray-500">
+              Emails are intentionally not fetched: the anon key is public, so this view only reads gameplay columns.
+            </p>
+          </div>
+        )}
+
+        {!loading && !error && activeTab === 'integrity' && (
+          <div className="space-y-2">
+            {summary.anomalies.length === 0 ? (
+              <EmptyRow>
+                <span className="inline-flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                  No anomalies found in the readable player rows.
+                </span>
+              </EmptyRow>
+            ) : (
+              <ul className="space-y-1.5">
+                {summary.anomalies.map((anomaly, index) => (
+                  <li
+                    key={`${anomaly.username}-${anomaly.type}-${index}`}
+                    className="flex flex-wrap items-center gap-2 border-2 border-[#1E2522] bg-white px-2 py-1.5"
                   >
-                    <div className="min-w-0">
-                      <strong className="break-words text-[#1E2522]">{user.name}</strong>
-                      <div className="text-[11px] text-gray-500">{user.meta}</div>
-                    </div>
-                    <NeoBadge tone={user.tone} size="sm" className="self-start sm:self-auto">
-                      {user.status}
+                    <NeoBadge tone={SEVERITY_TONE[anomaly.severity] || 'neutral'} size="sm">
+                      {anomaly.severity}
                     </NeoBadge>
-                  </div>
-                ))
-              )}
-            </div>
-          ) : null}
-
-          {activeTab === 'metrics' ? (
-            <div
-              role="tabpanel"
-              id="admin-panel-metrics"
-              aria-labelledby="admin-tab-metrics"
-              tabIndex={0}
-              className="focus-visible:outline-none"
-            >
-              <div className="grid grid-cols-1 gap-3 text-center sm:grid-cols-3">
-                <div className="border-2 border-[#1E2522] bg-[#E7EEDB] p-3">
-                  <div className="text-2xl font-bold text-[#586526]">45</div>
-                  <div className="mt-1 text-[11px] font-bold uppercase">Curriculum Stages</div>
-                </div>
-                <div className="border-2 border-[#1E2522] bg-[#FEF3C7] p-3">
-                  <div className="text-2xl font-bold text-[#B45309]">99.9%</div>
-                  <div className="mt-1 text-[11px] font-bold uppercase">RLS Policy Coverage</div>
-                </div>
-                <div className="border-2 border-[#1E2522] bg-[#FEE2E2] p-3">
-                  <div className="text-2xl font-bold text-[#DC2626]">0</div>
-                  <div className="mt-1 text-[11px] font-bold uppercase">Breaches Detected</div>
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </div>
+                    <span className="font-bold">{anomaly.username}</span>
+                    <span className="text-[9px] uppercase text-[#586526]">{anomaly.type}</span>
+                    <span className="w-full text-[10px] text-gray-700 sm:w-auto sm:flex-1">{anomaly.detail}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="text-[10px] text-gray-500">
+              Checks are heuristics from public rows (XP ceiling, impossible stage ids, odd gold). They flag, they never ban.
+            </p>
+          </div>
+        )}
       </div>
     </NeoModal>
   );

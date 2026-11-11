@@ -4,35 +4,9 @@ import { Code2, Map, Swords, UserPlus } from 'lucide-react';
 import NeoModal from './ui/NeoModal';
 import NeoButton from './ui/NeoButton';
 import NeoBadge from './ui/NeoBadge';
+import { markHowToPlaySeen } from '../lib/onboarding';
 
-export const HOWTO_STORAGE_KEY = 'pixelcoder_howto_seen_v1';
-
-/** True when the player already finished/skipped the onboarding with "Don't show again". */
-export function hasSeenHowToPlay() {
-  try {
-    return window.localStorage.getItem(HOWTO_STORAGE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-/** Persist that the player does not want to see the onboarding again. */
-export function markHowToPlaySeen() {
-  try {
-    window.localStorage.setItem(HOWTO_STORAGE_KEY, '1');
-  } catch {
-    /* storage unavailable (private mode) — silently ignore */
-  }
-}
-
-/** Clear the persisted flag (useful for "Replay tutorial" actions). */
-export function resetHowToPlaySeen() {
-  try {
-    window.localStorage.removeItem(HOWTO_STORAGE_KEY);
-  } catch {
-    /* ignore */
-  }
-}
+export { HOWTO_STORAGE_KEY, hasSeenHowToPlay, markHowToPlaySeen, resetHowToPlaySeen } from '../lib/onboarding';
 
 const COPY = {
   en: {

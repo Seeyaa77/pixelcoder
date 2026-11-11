@@ -9,6 +9,11 @@ export const FAIL_DAMAGE = 15;
 export const POTION_HEAL = 35;
 export const POTION_COST = 50;
 export const XP_PER_LEVEL_BASE = 250;
+export const ARMOR_MAX = 60;
+export const ARMOR_STEP = 10;
+export const ARMOR_MAX_REDUCTION = 0.6;
+export const ARMOR_MIN_DAMAGE = 1;
+export const WEAPON_XP_DIVISOR = 5;
 
 /**
  * Default player state, matching getStoredSession() in src/lib/supabase.js.
@@ -60,7 +65,16 @@ export function isStageUnlocked(state, track, stageNumber) {
 }
 
 /**
- * Award a first-time stage clear: XP + gold + streak, and unlock the next stage.
+ * Extra XP a clear is worth because of the equipped weapon (atk / 5).
+ * Keeps weapon upgrades meaningful instead of cosmetic.
+ */
+export function weaponXpBonus(weaponAtk) {
+  const atk = Math.max(0, Number(weaponAtk) || 0);
+  return Math.floor(atk / WEAPON_XP_DIVISOR);
+}
+
+/**
+ * Award a first-time stage clear: XP (stage + weapon bonus) + gold + streak.
  * Repeated clears are idempotent (no double reward).
  */
 export function applyStageClear(state, track, stageNumber, xp) {
@@ -78,7 +92,7 @@ export function applyStageClear(state, track, stageNumber, xp) {
 
   return {
     ...state,
-    total_xp: (Number(state.total_xp) || 0) + xpAwarded,
+    total_xp: (Number(state.total_xp) || 0) + xpAwarded + weaponXpBonus(state.weapon_atk),
     current_streak: (Number(state.current_streak) || 0) + 1,
     gold: (Number(state.gold) || 0) + STAGE_CLEAR_GOLD,
     clearedStages: {
@@ -89,14 +103,64 @@ export function applyStageClear(state, track, stageNumber, xp) {
 }
 
 /**
- * Apply stage failure damage. At 0 HP the player revives at 50 HP and loses
- * one potion (mirrors handleStageFailed in App.jsx).
+ * Fraction of incoming damage blocked by armor (0 – ARMOR_MAX_REDUCTION).
+ * 20 armor blocks 20%, the cap is 60%.
+ */
+export function armorReduction(armor) {
+  const value = Math.max(0, Number(armor) || 0);
+  return Math.min(ARMOR_MAX_REDUCTION, value / 100);
+}
+
+/**
+ * Damage actually taken after armor, rounded up, never below ARMOR_MIN_DAMAGE.
+ */
+export function damageAfterArmor(baseDamage, armor) {
+  const base = Math.max(0, Number(baseDamage) || 0);
+  if (base === 0) return 0;
+  const taken = Math.ceil(base * (1 - armorReduction(armor)));
+  return Math.max(ARMOR_MIN_DAMAGE, taken);
+}
+
+/** Gold price of the next armor plate (100, then +40 per plate). */
+export function armorUpgradeCost(armor) {
+  const value = Math.max(0, Number(armor) || 0);
+  return 100 + Math.floor(value / ARMOR_STEP) * 40;
+}
+
+/**
+ * Buy one armor plate: +10 armor, capped at ARMOR_MAX. No-op when maxed out
+ * or when the player cannot afford it (the UI owns the messaging).
+ */
+export function upgradeArmor(state) {
+  if (!state) return state;
+
+  const armor = Math.max(0, Number(state.armor) || 0);
+  if (armor >= ARMOR_MAX) return state;
+
+  const cost = armorUpgradeCost(armor);
+  const gold = Number(state.gold) || 0;
+  if (gold < cost) return state;
+
+  return {
+    ...state,
+    gold: gold - cost,
+    armor: Math.min(ARMOR_MAX, armor + ARMOR_STEP)
+  };
+}
+
+/**
+ * Apply stage failure damage after armor mitigation. At 0 HP the player
+ * revives at 50 HP and loses one potion.
  */
 export function applyStageFail(state, damage = FAIL_DAMAGE) {
   if (!state) return state;
 
   const incoming = Number(damage);
-  const nextHp = (Number(state.hp) || 0) - (Number.isFinite(incoming) ? incoming : FAIL_DAMAGE);
+  const mitigated = damageAfterArmor(
+    Number.isFinite(incoming) ? incoming : FAIL_DAMAGE,
+    state.armor
+  );
+  const nextHp = (Number(state.hp) || 0) - mitigated;
 
   if (nextHp <= 0) {
     return {

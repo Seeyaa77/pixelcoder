@@ -5,6 +5,7 @@ import NeoModal from './ui/NeoModal';
 import NeoButton from './ui/NeoButton';
 import NeoBadge from './ui/NeoBadge';
 import { useToast } from './ui/toast-context';
+import { ARMOR_MAX, ARMOR_STEP, armorUpgradeCost, damageAfterArmor, weaponXpBonus } from '../lib/progress';
 
 const POTION_COST = 50;
 
@@ -16,6 +17,7 @@ export default function InventoryModal({
   onSelectCharacter,
   onUsePotion,
   onBuyPotion,
+  onUpgradeArmor,
 }) {
   const toast = useToast();
 
@@ -81,6 +83,17 @@ export default function InventoryModal({
     : [playerState.weapon_name || 'Pixel Blade'];
   const canAffordPotion = gold >= POTION_COST;
   const hpIsFull = playerState.hp >= playerState.max_hp;
+
+  const armor = Math.max(0, Number(playerState.armor) || 0);
+  const armorMaxed = armor >= ARMOR_MAX;
+  const armorCost = armorUpgradeCost(armor);
+  const damageTaken = damageAfterArmor(15, armor);
+
+  const handleUpgradeArmor = () => {
+    if (armorMaxed || gold < armorCost) return;
+    // App owns the success / failure messaging so the toast is not duplicated.
+    onUpgradeArmor?.();
+  };
 
   const handleUsePotion = () => {
     if (playerState.potions <= 0) {
@@ -206,6 +219,53 @@ export default function InventoryModal({
           ) : null}
         </div>
 
+        {/* Armor plates — armor is real damage mitigation, not a number */}
+        <section aria-labelledby="armor-heading">
+          <h3
+            id="armor-heading"
+            className="mb-2 flex items-center gap-1.5 border-b-2 border-[#1E2522] pb-1.5 text-xs font-extrabold uppercase text-[#1E2522]"
+          >
+            <ShieldAlert className="h-4 w-4 text-[#7D8D39]" aria-hidden="true" /> Armor Plates
+          </h3>
+          <div className="flex flex-col gap-3 border-2 border-[#1E2522] bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <strong className="text-sm text-[#1E2522]">
+                Armor {armor} / {ARMOR_MAX}
+              </strong>
+              <p className="text-[10px] text-gray-600">
+                Blocks {Math.min(60, armor)}% of every monster hit — 15 DMG becomes{' '}
+                <span className="font-bold text-[#1E2522]">{damageTaken} DMG</span>.
+              </p>
+            </div>
+            <NeoButton
+              variant="secondary"
+              size="sm"
+              onClick={handleUpgradeArmor}
+              disabled={armorMaxed}
+              aria-label={armorMaxed ? 'Armor is at maximum' : `Upgrade armor for ${armorCost} gold`}
+            >
+              {armorMaxed ? (
+                <span>Maxed</span>
+              ) : (
+                <>
+                  <span>Upgrade +{ARMOR_STEP}</span>
+                  <PixelCoinIcon className="h-3 w-3" aria-hidden="true" />
+                  <span>{armorCost}</span>
+                </>
+              )}
+            </NeoButton>
+          </div>
+          {!armorMaxed && gold < armorCost ? (
+            <p
+              role="note"
+              className="mt-2 flex w-full items-center gap-1.5 border border-[#1E2522] bg-[#FEF3C7] px-2 py-1 text-[10px] font-bold text-[#92400E]"
+            >
+              <ShieldAlert className="h-3 w-3 shrink-0" aria-hidden="true" />
+              Not enough gold: need {armorCost - gold} more. You have {gold}.
+            </p>
+          ) : null}
+        </section>
+
         {/* Hero roster */}
         <section aria-labelledby="roster-heading">
           <h3
@@ -294,7 +354,9 @@ export default function InventoryModal({
                     />
                     <div className="min-w-0">
                       <div className="truncate font-bold text-[#1E2522]">{weapon.name}</div>
-                      <div className="text-[10px] font-bold text-[#586526]">+{weapon.atk} Attack DMG</div>
+                      <div className="text-[10px] font-bold text-[#586526]">
+                        +{weapon.atk} ATK · +{weaponXpBonus(weapon.atk)} XP per clear
+                      </div>
                     </div>
                   </div>
 

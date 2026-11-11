@@ -17,6 +17,13 @@ import {
   unlockHint,
   equipWeapon,
   selectCharacter,
+  armorReduction,
+  damageAfterArmor,
+  armorUpgradeCost,
+  upgradeArmor,
+  ARMOR_MAX,
+  ARMOR_STEP,
+  weaponXpBonus,
   xpLevel
 } from '../src/lib/progress.js';
 
@@ -43,7 +50,8 @@ test('clearing stage 1 rewards once, unlocks 2, and is idempotent', () => {
   const start = createDefaultProgress();
   const cleared = applyStageClear(start, 'python', 1, 100);
 
-  assert.equal(cleared.total_xp, 100);
+  // Starter weapon (25 atk) adds a +5 XP weapon bonus on top of the stage XP.
+  assert.equal(cleared.total_xp, 105);
   assert.equal(cleared.gold, 150 + STAGE_CLEAR_GOLD);
   assert.equal(cleared.current_streak, 2);
   assert.deepEqual(getClearedStages(cleared, 'python'), [1]);
@@ -52,7 +60,7 @@ test('clearing stage 1 rewards once, unlocks 2, and is idempotent', () => {
 
   const repeated = applyStageClear(cleared, 'python', 1, 100);
   assert.equal(repeated, cleared, 'repeat clear must return the same reference (no farming)');
-  assert.equal(repeated.total_xp, 100);
+  assert.equal(repeated.total_xp, 105, 'repeat clear adds no XP (stage 100 + weapon 5)');
 });
 
 test('tracks are independent', () => {
@@ -77,9 +85,13 @@ test('stage clear ignores invalid input', () => {
   assert.equal(applyStageClear(null, 'python', 1, 100), null);
 });
 
-test('failure damage reduces HP and revives at 50 HP losing a potion', () => {
+test('failure damage is reduced by armor, then revives at 50 HP losing a potion', () => {
+  // Default armor is 20 → 20% blocked → ceil(15 * 0.8) = 12 damage.
   const hurt = applyStageFail(stateWith({ hp: 100 }), 15);
-  assert.equal(hurt.hp, 85);
+  assert.equal(hurt.hp, 88);
+
+  const unarmored = applyStageFail(stateWith({ hp: 100, armor: 0 }), 15);
+  assert.equal(unarmored.hp, 85);
 
   const down = applyStageFail(stateWith({ hp: 10, potions: 2 }), 15);
   assert.equal(down.hp, 50);
@@ -87,6 +99,58 @@ test('failure damage reduces HP and revives at 50 HP losing a potion', () => {
 
   const noPotions = applyStageFail(stateWith({ hp: 10, potions: 0 }), 15);
   assert.equal(noPotions.potions, 0, 'potions never go negative');
+});
+
+test('armor reduces damage proportionally and is capped', () => {
+  assert.equal(armorReduction(20), 0.2);
+  assert.equal(armorReduction(60), 0.6);
+  assert.equal(armorReduction(999), 0.6, 'never above the 60% cap');
+  assert.equal(armorReduction(0), 0);
+  assert.equal(armorReduction(undefined), 0);
+
+  assert.equal(damageAfterArmor(15, 0), 15);
+  assert.equal(damageAfterArmor(15, 20), 12);
+  assert.equal(damageAfterArmor(15, 30), 11);
+  assert.equal(damageAfterArmor(15, 60), 6);
+  assert.equal(damageAfterArmor(0, 60), 0, 'no hit, no damage');
+  assert.equal(damageAfterArmor(1, 60), 1, 'never below 1 damage');
+});
+
+test('armor upgrades cost gold, add a plate, and stop at the cap', () => {
+  assert.equal(armorUpgradeCost(20), 180);
+  assert.equal(armorUpgradeCost(0), 100);
+
+  const poor = upgradeArmor(stateWith({ armor: 20, gold: 100 }));
+  assert.equal(poor.armor, 20, 'cannot afford → untouched');
+  assert.equal(poor.gold, 100);
+
+  const upgraded = upgradeArmor(stateWith({ armor: 20, gold: 500 }));
+  assert.equal(upgraded.armor, 20 + ARMOR_STEP);
+  assert.equal(upgraded.gold, 500 - 180);
+
+  const maxed = upgradeArmor(stateWith({ armor: ARMOR_MAX, gold: 9999 }));
+  assert.equal(maxed.armor, ARMOR_MAX);
+  assert.equal(maxed.gold, 9999, 'no gold burned at max');
+
+  const nearlyMaxed = upgradeArmor(stateWith({ armor: ARMOR_MAX - 5, gold: 9999 }));
+  assert.equal(nearlyMaxed.armor, ARMOR_MAX, 'never exceeds the cap');
+});
+
+test('weapon attack adds bonus XP on a clear (never cosmetic)', () => {
+  assert.equal(weaponXpBonus(0), 0);
+  assert.equal(weaponXpBonus(25), 5);
+  assert.equal(weaponXpBonus(45), 9);
+  assert.equal(weaponXpBonus(undefined), 0);
+  assert.equal(weaponXpBonus(-50), 0, 'negative attack never steals XP');
+
+  const base = applyStageClear(stateWith({ weapon_atk: 0 }), 'python', 1, 100);
+  assert.equal(base.total_xp, 100, 'starter weapon adds nothing');
+
+  const armed = applyStageClear(stateWith({ weapon_atk: 45 }), 'python', 1, 100);
+  assert.equal(armed.total_xp, 109, '45 atk adds 9 XP');
+
+  const repeat = applyStageClear(armed, 'python', 1, 100);
+  assert.equal(repeat.total_xp, 109, 'repeat clear is still a no-op');
 });
 
 test('drinkPotion heals 35 capped at max_hp and consumes a potion', () => {

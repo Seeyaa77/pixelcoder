@@ -20,6 +20,13 @@ import {
   isStageUnlocked,
   hintKey,
   unlockHint,
+  armorReduction,
+  damageAfterArmor,
+  armorUpgradeCost,
+  upgradeArmor,
+  weaponXpBonus,
+  ARMOR_MAX,
+  ARMOR_STEP,
   xpLevel
 } from './lib/progress';
 import { Heart } from 'lucide-react';
@@ -45,7 +52,17 @@ const UI_COPY = {
     guestOn: 'Guest mode active',
     guestOnDetail: 'Progress is saved in this browser. Register any time to keep it on your account.',
     guestBanner: 'GUEST MODE — progress is only saved in this browser.',
-    saveToAccount: 'Save to account'
+    saveToAccount: 'Save to account',
+    noGoldArmor: 'Not enough gold for an armor plate.',
+    armorMaxed: 'Armor is already at maximum (60).',
+    armorUpgraded: 'Armor plate installed',
+    armorUpgradedDetail: (armor) => `Armor is now ${armor} — ${armor}% of every hit is blocked.`,
+    hurt: (taken, armor) => `The monster hit you for ${taken} damage (${armor}% blocked by armor).`,
+    cleared: (xp) => `Stage cleared — +${xp} XP`,
+    clearedWeapon: (bonus, weapon) => `Includes +${bonus} XP from ${weapon || 'your weapon'}.`,
+    clearedDetail: 'Next stage unlocked. Keep the streak alive!',
+    armorChip: 'ARM',
+    armorChipTitle: (armor, taken) => `${armor} armor blocks ${armor}% of every hit (${taken} DMG taken instead of 15).`
   },
   id: {
     locked: (n) => `Stage ${n} masih terkunci. Selesaikan stage sebelumnya dulu!`,
@@ -59,7 +76,17 @@ const UI_COPY = {
     guestOn: 'Mode tamu aktif',
     guestOnDetail: 'Progres tersimpan di browser ini. Daftar kapan saja untuk menyimpannya ke akun.',
     guestBanner: 'MODE TAMU — progres hanya tersimpan di browser ini.',
-    saveToAccount: 'Simpan ke akun'
+    saveToAccount: 'Simpan ke akun',
+    noGoldArmor: 'Gold tidak cukup untuk memasang armor baru.',
+    armorMaxed: 'Armor sudah maksimal (60).',
+    armorUpgraded: 'Armor terpasang',
+    armorUpgradedDetail: (armor) => `Armor sekarang ${armor} — ${armor}% dari setiap serangan berhasil ditahan.`,
+    hurt: (taken, armor) => `Monster memukul kamu ${taken} damage (${armor}% ditahan armor).`,
+    cleared: (xp) => `Stage selesai — +${xp} XP`,
+    clearedWeapon: (bonus, weapon) => `Termasuk +${bonus} XP dari ${weapon || 'senjatamu'}.`,
+    clearedDetail: 'Stage berikutnya terbuka. Jaga streak-mu!',
+    armorChip: 'ARM',
+    armorChipTitle: (armor, taken) => `Armor ${armor} menahan ${armor}% setiap serangan (${taken} DMG, bukan 15).`
   }
 };
 
@@ -139,12 +166,23 @@ export default function App() {
   };
 
   const handleStageClear = (stageNum, xpAwarded, _entropy) => {
-      setMonsterHp(0);
-      setPlayerState(prev => applyStageClear(prev, currentTrackId, stageNum, xpAwarded));
-    };
+    setMonsterHp(0);
+    const bonus = weaponXpBonus(playerState.weapon_atk);
+    setPlayerState(prev => applyStageClear(prev, currentTrackId, stageNum, xpAwarded));
+    toast.success(ui.cleared((Number(xpAwarded) || 0) + bonus), {
+      description: bonus > 0 ? ui.clearedWeapon(bonus, playerState.weapon_name) : ui.clearedDetail
+    });
+  };
 
   const handleStageFailed = () => {
+    const taken = damageAfterArmor(15, playerState.armor);
+    const blocked = Math.round(armorReduction(playerState.armor) * 100);
     setPlayerState(prev => applyStageFail(prev, 15));
+    toast.warning(ui.hurt(taken, blocked), {
+      description: language === 'en'
+        ? 'Upgrade your armor in the Armory to soften the next hit.'
+        : 'Upgrade armor di Armory supaya pukulan berikutnya lebih ringan.'
+    });
   };
 
   const handleNextStage = () => {
@@ -208,6 +246,27 @@ export default function App() {
 
   const handleSelectCharacter = (charName) => {
     setPlayerState(prev => selectCharacter(prev, charName));
+  };
+
+  const handleUpgradeArmor = () => {
+    const armor = Number(playerState.armor) || 0;
+    if (armor >= ARMOR_MAX) {
+      toast.info(ui.armorMaxed);
+      return;
+    }
+    const cost = armorUpgradeCost(armor);
+    if ((Number(playerState.gold) || 0) < cost) {
+      toast.error(ui.noGoldArmor, {
+        description: language === 'en'
+          ? `One plate costs ${cost} gold — clear a stage to earn more.`
+          : `Satu plate butuh ${cost} gold — selesaikan stage untuk menambah gold.`
+      });
+      return;
+    }
+    setPlayerState(prev => upgradeArmor(prev));
+    toast.success(ui.armorUpgraded, {
+      description: ui.armorUpgradedDetail(Math.min(ARMOR_MAX, armor + ARMOR_STEP))
+    });
   };
 
   const handleAuthSuccess = (authenticatedUser) => {
@@ -337,6 +396,12 @@ export default function App() {
             >
               Lv.{levelInfo.level}
             </span>
+            <span
+              className="hidden sm:inline-flex items-center gap-1 border-2 border-[#1E2522] bg-[#DCFCE7] px-2 py-1 font-bold text-[#166534]"
+              title={ui.armorChipTitle(playerState.armor, damageAfterArmor(15, playerState.armor))}
+            >
+              {ui.armorChip} {playerState.armor}
+            </span>
             <button
               onClick={() => setLanguage(language === 'en' ? 'id' : 'en')}
               className="neo-button text-[11px] py-1 px-2 bg-[#E0E7FF] text-[#3730A3] hover:bg-[#C7D2FE] flex items-center gap-1"
@@ -462,6 +527,7 @@ export default function App() {
         playerState={playerState}
         onEquipWeapon={handleEquipWeapon}
         onSelectCharacter={handleSelectCharacter}
+        onUpgradeArmor={handleUpgradeArmor}
         onUsePotion={handleUsePotion}
         onBuyPotion={handleBuyPotion}
       />}

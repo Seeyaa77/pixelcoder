@@ -1,15 +1,22 @@
 // Real code execution for PixelCoder.
 // - JavaScript: sandboxed Web Worker created from a Blob (no DOM access), 5s hard timeout.
 // - Python: real CPython via Pyodide, lazily loaded from CDN and reused.
-// - C++: Piston public execution API, 10s timeout.
+// - C++: remote compiler APIs (Piston with an optional API key, then Wandbox), 20s timeout.
 // No npm dependencies are used.
 
 export const JS_TIMEOUT_MS = 5000;
 export const PYTHON_TIMEOUT_MS = 20000;
-export const CPP_TIMEOUT_MS = 10000;
+export const CPP_TIMEOUT_MS = 20000;
+export const CPP_PROVIDER_TIMEOUT_MS = 10000;
 
 const PYODIDE_BASE = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';
 const PISTON_URL = 'https://emkc.org/api/v2/piston/execute';
+const WANDBOX_URL = 'https://wandbox.org/api/compile.json';
+const ENV = (typeof import.meta !== 'undefined' && import.meta.env) || {};
+// Piston's public instance now answers 401 without a key; Wandbox needs no key at all.
+const PISTON_API_KEY = ENV.VITE_PISTON_API_KEY || '';
+const PISTON_VERSION = ENV.VITE_PISTON_VERSION || '*';
+const WANDBOX_COMPILER = ENV.VITE_WANDBOX_COMPILER || 'gcc-head';
 
 export const FALLBACK_NOTICE = 'Execution engine unavailable — static check only';
 
@@ -449,60 +456,123 @@ export function prepareCppSource(code) {
  * Compile & run C++ through the public Piston API.
  * @returns {Promise<{ok: boolean, output: string, error: string, mode: 'real'|'unavailable', durationMs: number}>}
  */
-export async function runCpp(code) {
-  const startedAt = now();
+/** Normalize a Piston response into the evaluator result shape. */
+export function interpretPistonResult(data) {
+  const compile = (data && data.compile) || {};
+  const run = (data && data.run) || {};
+  const compileFailed = typeof compile.code === 'number' && compile.code !== 0;
+  const compileError = normalizeOutput(compile.stderr || (compile.code ? compile.output : ''));
+  const runtimeError = normalizeOutput(run.stderr);
+  const exitCode = typeof run.code === 'number' ? run.code : 0;
+  return {
+    ok: !compileFailed && exitCode === 0 && runtimeError === '',
+    output: normalizeOutput(run.stdout),
+    error: compileError || runtimeError
+  };
+}
+
+/** Normalize a Wandbox response into the evaluator result shape. */
+export function interpretWandboxResult(data) {
+  const status = data && data.status;
+  const compileError = normalizeOutput(data && data.compiler_error);
+  const programOutput = normalizeOutput(data && data.program_output);
+  const programError = normalizeOutput(data && data.program_error);
+  const failed = compileError !== '' || programError !== '' || (status !== undefined && String(status) !== '0');
+  return {
+    ok: !failed,
+    output: programOutput,
+    error: compileError || programError || (failed ? normalizeOutput((data && data.signal) || 'Compiler error') : '')
+  };
+}
+
+async function postJson(url, body, headers, timeoutMs) {
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = controller
-    ? setTimeout(() => controller.abort(), CPP_TIMEOUT_MS)
-    : null;
-
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
   try {
-    const response = await fetch(PISTON_URL, {
+    const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(headers || {}) },
       signal: controller ? controller.signal : undefined,
-      body: JSON.stringify({
-        language: 'c++',
-        version: '*',
-        files: [{ name: 'main.cpp', content: prepareCppSource(code) }]
-      })
+      body: JSON.stringify(body)
     });
-
-    if (!response.ok) {
-      throw new Error(`Piston responded with HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const compile = data && data.compile ? data.compile : {};
-    const run = data && data.run ? data.run : {};
-    const compileError = normalizeOutput(compile.stderr || (compile.code ? compile.output : ''));
-    const runtimeError = normalizeOutput(run.stderr);
-    const output = normalizeOutput(run.stdout);
-    const exitCode = typeof run.code === 'number' ? run.code : 0;
-    const compileFailed = typeof compile.code === 'number' && compile.code !== 0;
-    const ok = !compileFailed && exitCode === 0 && runtimeError === '';
-
-    return {
-      ok,
-      output,
-      error: compileError || runtimeError,
-      mode: 'real',
-      durationMs: elapsed(startedAt)
-    };
-  } catch (error) {
-    const aborted = error && error.name === 'AbortError';
-    return {
-      ok: false,
-      output: '',
-      error: aborted
-        ? `C++ engine timed out after ${CPP_TIMEOUT_MS / 1000}s.`
-        : `C++ engine unavailable — Piston could not be reached. (${(error && error.message) || error})`,
-      mode: 'unavailable',
-      durationMs: elapsed(startedAt)
-    };
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
   } finally {
     if (timer !== null) clearTimeout(timer);
   }
+}
+
+async function runCppOnPiston(source, timeoutMs) {
+  const headers = PISTON_API_KEY ? { Authorization: `Bearer ${PISTON_API_KEY}` } : {};
+  const data = await postJson(PISTON_URL, {
+    language: 'c++',
+    version: PISTON_VERSION,
+    files: [{ name: 'main.cpp', content: source }]
+  }, headers, timeoutMs);
+  return interpretPistonResult(data);
+}
+
+async function runCppOnWandbox(source, timeoutMs) {
+  const data = await postJson(WANDBOX_URL, {
+    compiler: WANDBOX_COMPILER,
+    code: source,
+    'compiler-option-raw': '-std=c++17',
+    stdin: ''
+  }, {}, timeoutMs);
+  return interpretWandboxResult(data);
+}
+
+const CPP_PROVIDERS = PISTON_API_KEY
+  ? [['Piston', runCppOnPiston], ['Wandbox', runCppOnWandbox]]
+  : [['Wandbox', runCppOnWandbox], ['Piston', runCppOnPiston]];
+
+export async function runCpp(code) {
+  const startedAt = now();
+  const source = prepareCppSource(code);
+  const failures = [];
+
+  for (const [name, runner] of CPP_PROVIDERS) {
+    try {
+      const result = await runner(source, CPP_PROVIDER_TIMEOUT_MS);
+      if (result.error && !result.output && /^(HTTP|Failed to fetch|NetworkError)/.test(result.error)) {
+        failures.push(`${name}: ${result.error}`);
+        continue;
+      }
+      return {
+        ok: result.ok,
+        output: result.output,
+        error: result.error,
+        mode: 'real',
+        durationMs: elapsed(startedAt)
+      };
+    } catch (error) {
+      const aborted = error && error.name === 'AbortError';
+      failures.push(`${name}: ${aborted ? 'timed out' : (error && error.message) || error}`);
+    }
+  }
+
+  return {
+    ok: false,
+    output: '',
+    error: `C++ engine unavailable — ${failures.join('; ')}`,
+    mode: 'unavailable',
+    durationMs: elapsed(startedAt)
+  };
+}
+
+/**
+ * Last-resort verification when no remote engine answers. It can never confirm
+ * real behaviour, so it only passes when the source satisfies the stage pattern
+ * AND literally contains the expected output (i.e. the learner knows the answer).
+ * Everything else stays failed and surfaces FALLBACK_NOTICE instead of a free win.
+ */
+export function staticCheck(stage, code) {
+  if (!stage) return false;
+  const source = String(code || '');
+  if (!safeRegexTest(stage.regexMatch, source)) return false;
+  const expected = normalizeOutput(stage.expectedOutput).replace(/\s+/g, ' ').trim();
+  if (!expected) return false;
+  return source.replace(/\s+/g, ' ').includes(expected);
 }
 
 const RUNNERS = {
@@ -510,18 +580,6 @@ const RUNNERS = {
   python: runPython,
   cpp: runCpp
 };
-
-function staticCheck(stage, code) {
-  const expectedSolution = normalizeOutput(stage.solution || '');
-  if (!expectedSolution) return false;
-
-  const normalizedCode = normalizeOutput(code).replace(/\s+/g, '');
-  const normalizedSolution = expectedSolution.replace(/\s+/g, '');
-  if (!normalizedCode.includes(normalizedSolution)) return false;
-
-  // Mirror real mode: the pattern may describe the source or the expected text.
-  return safeRegexTest(stage.regexMatch, `${code}\n${stage.expectedOutput || ''}`);
-}
 
 /**
  * Execute a stage's code and validate it against the syllabus.
@@ -531,6 +589,10 @@ function staticCheck(stage, code) {
  * @param {{trackId: string, stage: object, code: string, entropy?: object}} params
  * @returns {Promise<{passed: boolean, output: string, error: string, mode: 'real'|'fallback', durationMs: number, notice?: string, entropy?: object}>}
  */
+export function hasRunner(trackId) {
+  return Boolean(RUNNERS[trackId]);
+}
+
 export async function evaluateStage({ trackId, stage, code, entropy } = {}) {
   const startedAt = now();
 

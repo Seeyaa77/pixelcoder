@@ -28,7 +28,7 @@
         },
         {
           "key": "Content-Security-Policy-Report-Only",
-          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; connect-src 'self' https://eqqelabmsvwmvwrpamjc.supabase.co wss://eqqelabmsvwmvwrpamjc.supabase.co https://cdn.jsdelivr.net https://emkc.org; manifest-src 'self'"
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'wasm-unsafe-eval' https://cdn.jsdelivr.net blob:; worker-src 'self' blob:; connect-src 'self' https://eqqelabmsvwmvwrpamjc.supabase.co wss://eqqelabmsvwmvwrpamjc.supabase.co https://cdn.jsdelivr.net https://emkc.org https://wandbox.org; manifest-src 'self'"
         }
       ]
     }

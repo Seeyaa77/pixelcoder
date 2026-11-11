@@ -86,16 +86,16 @@ export const SYLLABUS_TRACKS = {
         expectedOutput: '2\n4\n6\n8\n10',
         regexMatch: 'for\\s+.*in\\s+range'
       },
-      { stageNumber: 6, title: 'Lists & Methods', xp: 220, concept: 'w3schools: Python Lists', theory: { en: 'Lists are ordered, changeable collections. You can add, remove, and modify elements.\n\nExample:\ninventory = ["potion", "shield"]\ninventory.append("sword")  # Add to end\nprint(inventory[0])  # Access first item', id: 'List adalah koleksi yang terurut dan dapat diubah. Anda bisa menambah, menghapus, dan memodifikasi elemen.\n\nContoh:\ninventory = ["potion", "shield"]\ninventory.append("sword")  # Tambah ke akhir\nprint(inventory[0])  # Akses item pertama' }, taskType: 'code', question: 'Create inventory = ["potion", "shield"]. Append "sword" and print inventory.', starterCode: 'inventory = ["potion", "shield"]\n', solution: 'inventory.append("sword")\nprint(inventory)', expectedOutput: "['potion', 'shield', 'sword']", regexMatch: 'append' },
+      { stageNumber: 6, title: 'Lists & Methods', xp: 220, concept: 'w3schools: Python Lists', theory: { en: 'Lists are ordered, changeable collections. You can add, remove, and modify elements.\n\nExample:\ninventory = ["potion", "shield"]\ninventory.append("sword")  # Add to end\nprint(inventory[0])  # Access first item', id: 'List adalah koleksi yang terurut dan dapat diubah. Anda bisa menambah, menghapus, dan memodifikasi elemen.\n\nContoh:\ninventory = ["potion", "shield"]\ninventory.append("sword")  # Tambah ke akhir\nprint(inventory[0])  # Akses item pertama' }, taskType: 'code', question: 'Create inventory = ["potion", "shield"]. Append "sword" and print inventory.', starterCode: 'inventory = ["potion", "shield"]\n', solution: 'inventory = ["potion", "shield"]\ninventory.append("sword")\nprint(inventory)', expectedOutput: "['potion', 'shield', 'sword']", regexMatch: 'append' },
             { stageNumber: 7, title: 'Dictionaries & Keys', xp: 240, concept: 'w3schools: Python Dictionaries', theory: { en: 'Dictionaries store data in key:value pairs. Keys must be unique and immutable.\n\nExample:\nhero = {"name": "Pixel", "hp": 100}\nprint(hero["name"])  # Access by key\nhero["mp"] = 50  # Add new key', id: 'Dictionary menyimpan data dalam pasangan key:value. Key harus unik dan immutable.\n\nContoh:\nhero = {"name": "Pixel", "hp": 100}\nprint(hero["name"])  # Akses via key\nhero["mp"] = 50  # Tambah key baru' }, taskType: 'code', question: 'Create hero = {"name": "Pixel", "hp": 100}. Print hero["hp"].', starterCode: '', solution: 'hero = {"name": "Pixel", "hp": 100}\nprint(hero["hp"])', expectedOutput: '100', regexMatch: 'hp' },
             { stageNumber: 8, title: 'Functions & *args', xp: 260, concept: 'w3schools: Python Functions', theory: { en: 'Functions with *args accept arbitrary positional arguments as a tuple.\n\nExample:\ndef sum_all(*nums):\n    return sum(nums)\nprint(sum_all(10, 20, 30))', id: 'Fungsi dengan *args menerima argumen posisi arbitrary sebagai tuple.\n\nContoh:\ndef sum_all(*nums):\n    return sum(nums)\nprint(sum_all(10, 20, 30))' }, taskType: 'code', question: 'Define sum_all(*nums) that returns sum(nums). Print sum_all(10, 20, 30).', starterCode: '', solution: 'def sum_all(*nums):\n    return sum(nums)\nprint(sum_all(10, 20, 30))', expectedOutput: '60', regexMatch: 'sum_all' },
-            { stageNumber: 9, title: 'Lambda & Map', xp: 280, concept: 'w3schools: Python Lambda', theory: { en: 'Lambda creates small anonymous functions. map() applies a function to all items.\n\nExample:\nnums = [1, 2, 3]\ndoubled = list(map(lambda x: x*2, nums))\nprint(doubled)', id: 'Lambda membuat fungsi anonim kecil. map() menerapkan fungsi ke semua item.\n\nContoh:\nnums = [1, 2, 3]\ndoubled = list(map(lambda x: x*2, nums))\nprint(doubled)' }, taskType: 'code', question: 'Use lambda to double [1, 2, 3] and print list(result).', starterCode: 'nums = [1, 2, 3]\n', solution: 'print(list(map(lambda x: x*2, nums)))', expectedOutput: '[2, 4, 6]', regexMatch: 'lambda' },
+            { stageNumber: 9, title: 'Lambda & Map', xp: 280, concept: 'w3schools: Python Lambda', theory: { en: 'Lambda creates small anonymous functions. map() applies a function to all items.\n\nExample:\nnums = [1, 2, 3]\ndoubled = list(map(lambda x: x*2, nums))\nprint(doubled)', id: 'Lambda membuat fungsi anonim kecil. map() menerapkan fungsi ke semua item.\n\nContoh:\nnums = [1, 2, 3]\ndoubled = list(map(lambda x: x*2, nums))\nprint(doubled)' }, taskType: 'code', question: 'Use lambda to double [1, 2, 3] and print list(result).', starterCode: 'nums = [1, 2, 3]\n', solution: 'nums = [1, 2, 3]\nprint(list(map(lambda x: x*2, nums)))', expectedOutput: '[2, 4, 6]', regexMatch: 'lambda' },
             { stageNumber: 10, title: 'Classes & Objects', xp: 300, concept: 'w3schools: Python Classes', theory: { en: 'Classes define blueprints. __init__ initializes instance attributes.\n\nExample:\nclass Knight:\n    def __init__(self):\n        self.atk = 50\nk = Knight()\nprint(k.atk)', id: 'Class mendefinisikan blueprint. __init__ menginisialisasi atribut instance.\n\nContoh:\nclass Knight:\n    def __init__(self):\n        self.atk = 50\nk = Knight()\nprint(k.atk)' }, taskType: 'code', question: 'Create class Knight with self.atk = 50. Instantiate and print knight.atk.', starterCode: '', solution: 'class Knight:\n    def __init__(self):\n        self.atk = 50\nk = Knight()\nprint(k.atk)', expectedOutput: '50', regexMatch: 'class\\s+Knight' },
             { stageNumber: 11, title: 'Inheritance & Super', xp: 320, concept: 'w3schools: Python Inheritance', theory: { en: 'Subclasses inherit from parent. super() calls parent methods.\n\nExample:\nclass Entity:\n    def __init__(self):\n        self.alive = True\nclass Hero(Entity):\n    pass\nh = Hero()\nprint(h.alive)', id: 'Subclass mewarisi dari parent. super() memanggil metode parent.\n\nContoh:\nclass Entity:\n    def __init__(self):\n        self.alive = True\nclass Hero(Entity):\n    pass\nh = Hero()\nprint(h.alive)' }, taskType: 'code', question: 'Subclass Hero from Entity. Print "Inherited".', starterCode: '', solution: 'class Entity:\n    pass\nclass Hero(Entity):\n    pass\nprint("Inherited")', expectedOutput: 'Inherited', regexMatch: 'Hero' },
             { stageNumber: 12, title: 'Iterators & Generators', xp: 350, concept: 'w3schools: Python Iterators', theory: { en: 'Generators use yield to produce values lazily, one at a time.\n\nExample:\ndef yield_mana():\n    yield 10\n    yield 20\nfor m in yield_mana():\n    print(m)', id: 'Generator menggunakan yield untuk menghasilkan nilai secara lazy, satu per satu.\n\nContoh:\ndef yield_mana():\n    yield 10\n    yield 20\nfor m in yield_mana():\n    print(m)' }, taskType: 'code', question: 'Write generator yield_mana() yielding 10 then 20.', starterCode: '', solution: 'def yield_mana():\n    yield 10\n    yield 20\nfor m in yield_mana():\n    print(m)', expectedOutput: '10\n20', regexMatch: 'yield' },
             { stageNumber: 13, title: 'File Handling & With', xp: 380, concept: 'w3schools: Python Files', theory: { en: 'The with statement ensures files are properly closed after operations.\n\nExample:\nwith open("save.txt", "w") as f:\n    f.write("SAVE_POINT")\n\nwith open("save.txt", "r") as f:\n    content = f.read()\nprint(content)', id: 'Statement with memastikan file tertutup dengan benar setelah operasi.\n\nContoh:\nwith open("save.txt", "w") as f:\n    f.write("SAVE_POINT")\n\nwith open("save.txt", "r") as f:\n    content = f.read()\nprint(content)' }, taskType: 'code', question: 'Simulate file read with content = "SAVE_POINT". Print content.', starterCode: '', solution: 'content = "SAVE_POINT"\nprint(content)', expectedOutput: 'SAVE_POINT', regexMatch: 'SAVE_POINT' },
             { stageNumber: 14, title: 'Try...Except Errors', xp: 400, concept: 'w3schools: Python Exceptions', theory: { en: 'Try/except catches exceptions to prevent crashes and handle errors gracefully.\n\nExample:\ntry:\n    x = 10 / 0\nexcept ZeroDivisionError:\n    print("Shield Protected")', id: 'Try/except menangkap exception untuk mencegah crash dan handle error dengan graceful.\n\nContoh:\ntry:\n    x = 10 / 0\nexcept ZeroDivisionError:\n    print("Shield Protected")' }, taskType: 'code', question: 'Catch ZeroDivisionError and print "Shield Protected".', starterCode: '', solution: 'try:\n    x = 10 / 0\nexcept ZeroDivisionError:\n    print("Shield Protected")', expectedOutput: 'Shield Protected', regexMatch: 'except' },
-            { stageNumber: 15, title: 'Master Project: Dungeon Boss', xp: 500, concept: 'Python Boss Battle', theory: { en: 'Combine loops, conditionals, functions, and data structures to defeat the final boss.\n\nExample:\nattacks = [40, 60, 80]\nboss_hp = 180\nif sum(attacks) >= boss_hp:\n    print("Boss Defeated")', id: 'Gabungkan loop, kondisional, fungsi, dan struktur data untuk mengalahkan boss final.\n\nContoh:\nattacks = [40, 60, 80]\nboss_hp = 180\nif sum(attacks) >= boss_hp:\n    print("Boss Defeated")' }, taskType: 'code', question: 'Calculate total damage: attacks = [40, 60, 80], boss_hp = 180. Print "Boss Defeated" if sum(attacks) >= boss_hp.', starterCode: 'attacks = [40, 60, 80]\nboss_hp = 180\n', solution: 'if sum(attacks) >= boss_hp:\n    print("Boss Defeated")', expectedOutput: 'Boss Defeated', regexMatch: 'Boss Defeated' }
+            { stageNumber: 15, title: 'Master Project: Dungeon Boss', xp: 500, concept: 'Python Boss Battle', theory: { en: 'Combine loops, conditionals, functions, and data structures to defeat the final boss.\n\nExample:\nattacks = [40, 60, 80]\nboss_hp = 180\nif sum(attacks) >= boss_hp:\n    print("Boss Defeated")', id: 'Gabungkan loop, kondisional, fungsi, dan struktur data untuk mengalahkan boss final.\n\nContoh:\nattacks = [40, 60, 80]\nboss_hp = 180\nif sum(attacks) >= boss_hp:\n    print("Boss Defeated")' }, taskType: 'code', question: 'Calculate total damage: attacks = [40, 60, 80], boss_hp = 180. Print "Boss Defeated" if sum(attacks) >= boss_hp.', starterCode: 'attacks = [40, 60, 80]\nboss_hp = 180\n', solution: 'attacks = [40, 60, 80]\nboss_hp = 180\nif sum(attacks) >= boss_hp:\n    print("Boss Defeated")', expectedOutput: 'Boss Defeated', regexMatch: 'Boss Defeated' }
     ]
   },
   cpp: {
@@ -185,16 +185,166 @@ export const SYLLABUS_TRACKS = {
           expectedOutput: '15',
           regexMatch: 'totalSum'
         },
-        { stageNumber: 6, title: 'Arrays & Indexing', xp: 220, concept: 'w3schools: C++ Arrays', theory: { en: 'Arrays are fixed-size collections of same-type elements. Access via zero-based index.\n\nExample:\nint gems[3] = {10, 20, 30};\ncout << gems[1]; // Prints 20', id: 'Array adalah koleksi ukuran tetap dengan elemen sejenis. Akses via index zero-based.\n\nContoh:\nint gems[3] = {10, 20, 30};\ncout << gems[1]; // Prints 20' }, taskType: 'code', question: 'Declare int gems[3] = {10, 20, 30}. Print gems[1].', starterCode: '', solution: 'cout << 20;', expectedOutput: '20', regexMatch: '20' },
-              { stageNumber: 7, title: 'References & Memory', xp: 240, concept: 'w3schools: C++ References', theory: { en: 'A reference (&) is an alias to an existing variable. Changes affect the original.\n\nExample:\nint mana = 100;\nint &ref = mana;\nref = 150;\ncout << mana; // 150', id: 'Reference (&) adalah alias ke variabel yang sudah ada. Perubahan mempengaruhi original.\n\nContoh:\nint mana = 100;\nint &ref = mana;\nref = 150;\ncout << mana; // 150' }, taskType: 'code', question: 'Create int mana = 100; int &ref = mana; Print ref.', starterCode: '', solution: 'cout << 100;', expectedOutput: '100', regexMatch: '100' },
-              { stageNumber: 8, title: 'Pointers & Dereference', xp: 260, concept: 'w3schools: C++ Pointers', theory: { en: 'Pointers store memory addresses. * dereferences, & gets address.\n\nExample:\nint hp = 50;\nint* ptr = &hp;\ncout << *ptr; // Prints 50', id: 'Pointer menyimpan alamat memori. * dereference, & dapatkan alamat.\n\nContoh:\nint hp = 50;\nint* ptr = &hp;\ncout << *ptr; // Prints 50' }, taskType: 'code', question: 'int hp = 50; int* ptr = &hp; Print *ptr.', starterCode: '', solution: 'cout << 50;', expectedOutput: '50', regexMatch: '50' },
-              { stageNumber: 9, title: 'Functions & Pass by Ref', xp: 280, concept: 'w3schools: C++ Functions', theory: { en: 'Pass by reference (& in parameter) lets functions modify caller variables.\n\nExample:\nvoid heal(int &hp) { hp += 25; }\nint p = 75; heal(p);\ncout << p; // 100', id: 'Pass by reference (& di parameter) biar fungsi bisa ubah variabel caller.\n\nContoh:\nvoid heal(int &hp) { hp += 25; }\nint p = 75; heal(p);\ncout << p; // 100' }, taskType: 'code', question: 'Write void heal(int &hp) that adds 25. Call heal on int p=75 and print p.', starterCode: '', solution: 'cout << 100;', expectedOutput: '100', regexMatch: '100' },
-              { stageNumber: 10, title: 'Classes & Encapsulation', xp: 300, concept: 'w3schools: C++ Classes', theory: { en: 'Classes encapsulate data. Private fields accessed via public methods.\n\nExample:\nclass Hero {\n    int atk = 40;\npublic:\n    int attack() { return atk; }\n};\nHero h; cout << h.attack();', id: 'Class enkapsulasi data. Field private diakses via metode public.\n\nContoh:\nclass Hero {\n    int atk = 40;\npublic:\n    int attack() { return atk; }\n};\nHero h; cout << h.attack();' }, taskType: 'code', question: 'Create class Hero with public method attack() returning 40. Print result.', starterCode: '', solution: 'cout << 40;', expectedOutput: '40', regexMatch: '40' },
-              { stageNumber: 11, title: 'Constructors & Destructors', xp: 320, concept: 'w3schools: C++ Constructors', theory: { en: 'Constructors initialize objects. Destructors clean up.\n\nExample:\nclass Hero { int score; public: Hero(): score(999) {} ~Hero() {} int get() { return score; } };\nHero h; cout << h.get();', id: 'Constructor inisialisasi object. Destructor bersihkan.\n\nContoh:\nclass Hero { int score; public: Hero(): score(999) {} ~Hero() {} int get() { return score; } };\nHero h; cout << h.get();' }, taskType: 'code', question: 'Constructor that initializes score = 999. Print score.', starterCode: '', solution: 'cout << 999;', expectedOutput: '999', regexMatch: '999' },
-              { stageNumber: 12, title: 'Inheritance & Virtual', xp: 350, concept: 'w3schools: C++ Polymorphism', theory: { en: 'Virtual functions enable runtime polymorphism. Derived classes override base methods.\n\nExample:\nclass Weapon { virtual string hit() { return "Attack"; } };\nclass Sword : public Weapon { string hit() override { return "Virtual Sword Attack"; } };\nWeapon* w = new Sword();\ncout << w->hit();', id: 'Fungsi virtual enable polymorphism runtime. Derived class override metode base.\n\nContoh:\nclass Weapon { virtual string hit() { return "Attack"; } };\nclass Sword : public Weapon { string hit() override { return "Virtual Sword Attack"; } };\nWeapon* w = new Sword();\ncout << w->hit();' }, taskType: 'code', question: 'Print "Virtual Sword Attack".', starterCode: '', solution: 'cout << "Virtual Sword Attack";', expectedOutput: 'Virtual Sword Attack', regexMatch: 'Virtual' },
-              { stageNumber: 13, title: 'Vectors & Dynamic Arrays', xp: 380, concept: 'w3schools: C++ Vectors', theory: { en: 'std::vector provides dynamic arrays with push_back for adding elements.\n\nExample:\nvector<int> v;\nv.push_back(1);\nv.push_back(2);\ncout << v.size(); // 2', id: 'std::vector array dinamis dengan push_back untuk menambah elemen.\n\nContoh:\nvector<int> v;\nv.push_back(1);\nv.push_back(2);\ncout << v.size(); // 2' }, taskType: 'code', question: 'Push 1, 2 into vector<int> v and print v.size().', starterCode: '', solution: 'cout << 2;', expectedOutput: '2', regexMatch: '2' },
-              { stageNumber: 14, title: 'Templates & Generics', xp: 400, concept: 'w3schools: C++ Templates', theory: { en: 'Templates create generic functions/classes that work with any type.\n\nExample:\ntemplate<typename T> T maxVal(T a, T b) { return a > b ? a : b; }\ncout << maxVal(15, 25); // 25', id: 'Template buat fungsi/class generik yang work dengan tipe apapun.\n\nContoh:\ntemplate<typename T> T maxVal(T a, T b) { return a > b ? a : b; }\ncout << maxVal(15, 25); // 25' }, taskType: 'code', question: 'Template maxVal returning larger of two values. Test with 15, 25.', starterCode: '', solution: 'cout << 25;', expectedOutput: '25', regexMatch: '25' },
-              { stageNumber: 15, title: 'Master Project: Memory Fortress', xp: 500, concept: 'C++ Systems Boss', theory: { en: 'Combine pointers, RAII, vectors, and templates to build a memory-safe buffer system.\n\nExample:\nvector<int> buffer(1024);\n// ... memory operations\ncout << "Memory Secure";', id: 'Gabungkan pointers, RAII, vectors, dan template untuk bangun buffer memory-safe.\n\nContoh:\nvector<int> buffer(1024);\n// ... operasi memori\ncout << "Memory Secure";' }, taskType: 'code', question: 'Allocate dynamic buffer and output "Memory Secure".', starterCode: '', solution: 'cout << "Memory Secure";', expectedOutput: 'Memory Secure', regexMatch: 'Secure' }
+        {
+          stageNumber: 6,
+          title: 'Arrays & Indexing',
+          xp: 220,
+          concept: 'w3schools: C++ Arrays',
+          theory: {
+            en: 'Arrays are fixed-size collections of elements of the same type, addressed with a zero-based index.\n\nExample:\nint gems[3] = {10, 20, 30};\ncout << gems[1]; // 20',
+            id: 'Array adalah koleksi ukuran tetap berisi elemen sejenis, diakses dengan index mulai dari 0.\n\nContoh:\nint gems[3] = {10, 20, 30};\ncout << gems[1]; // 20'
+          },
+          taskType: 'code',
+          question: 'Declare int gems[3] = {10, 20, 30}. Print the middle element, then on a new line print the sum of the first and last element.',
+          starterCode: 'int gems[3] = {10, 20, 30};\n// Print gems[1], then gems[0] + gems[2]\n',
+          solution: 'int gems[3] = {10, 20, 30};\ncout << gems[1] << "\\n";\ncout << gems[0] + gems[2] << "\\n";',
+          expectedOutput: '20\n40',
+          regexMatch: 'gems\\s*\\[\\s*1\\s*\\]'
+        },
+        {
+          stageNumber: 7,
+          title: 'References & Memory',
+          xp: 240,
+          concept: 'w3schools: C++ References',
+          theory: {
+            en: 'A reference (&) is an alias for an existing variable: writing through it changes the original.\n\nExample:\nint mana = 100;\nint &ref = mana;\nref = 150;\ncout << mana; // 150',
+            id: 'Reference (&) adalah alias untuk variabel yang sudah ada: menulis lewat reference mengubah variabel aslinya.\n\nContoh:\nint mana = 100;\nint &ref = mana;\nref = 150;\ncout << mana; // 150'
+          },
+          taskType: 'code',
+          question: 'Create int mana = 100 and int &ref = mana. Add 50 through the reference, then print mana and ref * 2 on one line separated by a space.',
+          starterCode: 'int mana = 100;\n// Bind a reference and change mana through it\n',
+          solution: 'int mana = 100;\nint &ref = mana;\nref += 50;\ncout << mana << " " << ref * 2 << "\\n";',
+          expectedOutput: '150 300',
+          regexMatch: 'int\\s*&\\s*ref'
+        },
+        {
+          stageNumber: 8,
+          title: 'Pointers & Dereference',
+          xp: 260,
+          concept: 'w3schools: C++ Pointers',
+          theory: {
+            en: 'A pointer stores a memory address. * dereferences it (reads/writes the value), & takes an address.\n\nExample:\nint hp = 50;\nint* ptr = &hp;\n*ptr += 10;\ncout << hp; // 60',
+            id: 'Pointer menyimpan alamat memori. * melakukan dereference (baca/tulis nilainya), & mengambil alamat.\n\nContoh:\nint hp = 50;\nint* ptr = &hp;\n*ptr += 10;\ncout << hp; // 60'
+          },
+          taskType: 'code',
+          question: 'Create int hp = 50 and int* ptr = &hp. Add 25 to hp through the pointer, then print hp and *ptr separated by a space.',
+          starterCode: 'int hp = 50;\n// Point at hp and modify it through the pointer\n',
+          solution: 'int hp = 50;\nint* ptr = &hp;\n*ptr += 25;\ncout << hp << " " << *ptr << "\\n";',
+          expectedOutput: '75 75',
+          regexMatch: '\\*\\s*ptr'
+        },
+        {
+          stageNumber: 9,
+          title: 'Functions & Pass by Ref',
+          xp: 280,
+          concept: 'w3schools: C++ Functions',
+          theory: {
+            en: 'Passing by reference (& in the parameter list) lets a function modify the caller variable.\n\nExample:\nvoid heal(int &hp, int amount) { hp += amount; }\nint p = 75;\nheal(p, 25);\ncout << p; // 100',
+            id: 'Pass by reference (& di parameter) membuat fungsi bisa mengubah variabel milik pemanggil.\n\nContoh:\nvoid heal(int &hp, int amount) { hp += amount; }\nint p = 75;\nheal(p, 25);\ncout << p; // 100'
+          },
+          taskType: 'code',
+          question: 'Write void heal(int &hp, int amount) that adds amount to hp. Call it with p = 75 and amount 25, then print p.',
+          starterCode: '// Define heal above main, then call it\n',
+          solution: 'void heal(int &hp, int amount) { hp += amount; }\nint main() {\n  int p = 75;\n  heal(p, 25);\n  cout << p << "\\n";\n  return 0;\n}',
+          expectedOutput: '100',
+          regexMatch: 'void\\s+heal\\s*\\(\\s*int\\s*&'
+        },
+        {
+          stageNumber: 10,
+          title: 'Classes & Encapsulation',
+          xp: 300,
+          concept: 'w3schools: C++ Classes',
+          theory: {
+            en: 'A class bundles data with methods. Private members are only reachable through public methods.\n\nExample:\nclass Hero {\n  int atk = 40;\npublic:\n  int attack() { return atk; }\n};',
+            id: 'Class menggabungkan data dengan method. Member private hanya bisa diakses lewat method public.\n\nContoh:\nclass Hero {\n  int atk = 40;\npublic:\n  int attack() { return atk; }\n};'
+          },
+          taskType: 'code',
+          question: 'Create class Hero with a private int atk = 40 and public method attack() returning atk. In main, print h.attack() for a Hero h.',
+          starterCode: 'class Hero {\n  // private atk, public attack()\n};\n',
+          solution: 'class Hero {\n  int atk = 40;\npublic:\n  int attack() { return atk; }\n};\nint main() {\n  Hero h;\n  cout << h.attack() << "\\n";\n  return 0;\n}',
+          expectedOutput: '40',
+          regexMatch: 'class\\s+Hero[\\s\\S]*attack\\s*\\('
+        },
+        {
+          stageNumber: 11,
+          title: 'Constructors & Destructors',
+          xp: 320,
+          concept: 'w3schools: C++ Constructors',
+          theory: {
+            en: 'A constructor initializes an object; a destructor cleans up when it leaves scope. Initializer lists set fields before the body runs.\n\nExample:\nclass Hero {\n  int score;\npublic:\n  Hero(int s) : score(s) {}\n  ~Hero() {}\n  int get() { return score; }\n};',
+            id: 'Constructor menginisialisasi object; destructor membersihkan saat object keluar scope. Initializer list mengisi field sebelum body berjalan.\n\nContoh:\nclass Hero {\n  int score;\npublic:\n  Hero(int s) : score(s) {}\n  ~Hero() {}\n  int get() { return score; }\n};'
+          },
+          taskType: 'code',
+          question: 'Give Hero a constructor Hero(int s) that stores s in score, an empty destructor, and get(). Create Hero h(999) in main and print h.get().',
+          starterCode: 'class Hero {\n  int score;\npublic:\n  // constructor + destructor + get()\n};\n',
+          solution: 'class Hero {\n  int score;\npublic:\n  Hero(int s) : score(s) {}\n  ~Hero() {}\n  int get() { return score; }\n};\nint main() {\n  Hero h(999);\n  cout << h.get() << "\\n";\n  return 0;\n}',
+          expectedOutput: '999',
+          regexMatch: 'Hero\\s*\\(\\s*999\\s*\\)'
+        },
+        {
+          stageNumber: 12,
+          title: 'Inheritance & Virtual',
+          xp: 350,
+          concept: 'w3schools: C++ Polymorphism',
+          theory: {
+            en: 'virtual functions dispatch at runtime, so a base pointer calls the derived override. Always give polymorphic bases a virtual destructor.\n\nExample:\nclass Weapon {\npublic:\n  virtual string hit() { return "Attack"; }\n  virtual ~Weapon() {}\n};',
+            id: 'Fungsi virtual dipilih saat runtime, jadi pointer base memanggil override milik derived. Selalu beri virtual destructor pada base polimorfik.\n\nContoh:\nclass Weapon {\npublic:\n  virtual string hit() { return "Attack"; }\n  virtual ~Weapon() {}\n};'
+          },
+          taskType: 'code',
+          question: 'Create Weapon with virtual string hit() returning "Attack" and a virtual destructor, plus Sword : public Weapon overriding hit() to return "Virtual Sword Attack". Print w->hit() through a Weapon*.',
+          starterCode: '#include <string>\n// Weapon + Sword, then a Weapon* pointing at new Sword\n',
+          solution: '#include <string>\nclass Weapon {\npublic:\n  virtual string hit() { return "Attack"; }\n  virtual ~Weapon() {}\n};\nclass Sword : public Weapon {\npublic:\n  string hit() override { return "Virtual Sword Attack"; }\n};\nint main() {\n  Weapon* w = new Sword();\n  cout << w->hit() << "\\n";\n  delete w;\n  return 0;\n}',
+          expectedOutput: 'Virtual Sword Attack',
+          regexMatch: 'override'
+        },
+        {
+          stageNumber: 13,
+          title: 'Vectors & Dynamic Arrays',
+          xp: 380,
+          concept: 'w3schools: C++ Vectors',
+          theory: {
+            en: 'std::vector is a resizable array. push_back appends, size() reports the length, and range-for walks the values.\n\nExample:\nvector<int> v;\nv.push_back(1);\nv.push_back(2);\ncout << v.size(); // 2',
+            id: 'std::vector adalah array yang bisa membesar. push_back menambah, size() memberi panjang, range-for menelusuri nilainya.\n\nContoh:\nvector<int> v;\nv.push_back(1);\nv.push_back(2);\ncout << v.size(); // 2'
+          },
+          taskType: 'code',
+          question: 'Push 1, 2 and 3 into vector<int> v. Print v.size() and the sum of all elements on one line separated by a space.',
+          starterCode: 'vector<int> v;\n// push_back three values, then print size and sum\n',
+          solution: 'vector<int> v;\nv.push_back(1);\nv.push_back(2);\nv.push_back(3);\nint sum = 0;\nfor (int x : v) sum += x;\ncout << v.size() << " " << sum << "\\n";',
+          expectedOutput: '3 6',
+          regexMatch: 'push_back'
+        },
+        {
+          stageNumber: 14,
+          title: 'Templates & Generics',
+          xp: 400,
+          concept: 'w3schools: C++ Templates',
+          theory: {
+            en: 'Templates let one function work for any type; the compiler generates a version per type used.\n\nExample:\ntemplate <typename T>\nT maxVal(T a, T b) { return a > b ? a : b; }\ncout << maxVal(15, 25); // 25',
+            id: 'Template membuat satu fungsi berlaku untuk tipe apa pun; compiler membuat versi per tipe yang dipakai.\n\nContoh:\ntemplate <typename T>\nT maxVal(T a, T b) { return a > b ? a : b; }\ncout << maxVal(15, 25); // 25'
+          },
+          taskType: 'code',
+          question: 'Write template <typename T> T maxVal(T a, T b) returning the larger value. Print maxVal(15, 25) and maxVal(2.5, 1.5) on one line separated by a space.',
+          starterCode: '// template <typename T> T maxVal(T a, T b)\n',
+          solution: 'template <typename T>\nT maxVal(T a, T b) { return a > b ? a : b; }\nint main() {\n  cout << maxVal(15, 25) << " " << maxVal(2.5, 1.5) << "\\n";\n  return 0;\n}',
+          expectedOutput: '25 2.5',
+          regexMatch: 'template\\s*<'
+        },
+        {
+          stageNumber: 15,
+          title: 'Master Project: Memory Fortress',
+          xp: 500,
+          concept: 'C++ Systems Boss',
+          theory: {
+            en: 'Combine containers, loops and RAII: a vector owns its buffer, so filling it needs no manual delete. Sum the buffer, then report the vault status.\n\nExample:\nvector<int> buffer(4);\nfor (int i = 0; i < 4; i++) buffer[i] = i * 10;\nint sum = 0;\nfor (int v : buffer) sum += v;\ncout << sum; // 60',
+            id: 'Gabungkan container, loop dan RAII: vector memiliki buffer-nya sendiri, jadi tidak perlu delete manual. Jumlahkan buffer, lalu laporkan status vault.\n\nContoh:\nvector<int> buffer(4);\nfor (int i = 0; i < 4; i++) buffer[i] = i * 10;\nint sum = 0;\nfor (int v : buffer) sum += v;\ncout << sum; // 60'
+          },
+          taskType: 'code',
+          question: 'Allocate vector<int> buffer(4) and fill each slot with index * 10. Print the sum of the buffer, then print "Memory Secure" on the next line.',
+          starterCode: 'vector<int> buffer(4);\n// fill, sum, then report the vault\n',
+          solution: 'vector<int> buffer(4);\nfor (int i = 0; i < 4; i++) buffer[i] = i * 10;\nint sum = 0;\nfor (int value : buffer) sum += value;\ncout << sum << "\\n";\ncout << "Memory Secure" << "\\n";',
+          expectedOutput: '60\nMemory Secure',
+          regexMatch: 'vector|new'
+        }
       ]
     },
   javascript: {
@@ -286,14 +436,134 @@ export const SYLLABUS_TRACKS = {
         },
         { stageNumber: 6, title: 'Spread & Rest Operator', xp: 220, concept: 'w3schools: JS Spread Operator', theory: { en: 'Spread (...) expands iterables. Rest collects remaining elements into an array.\n\nExample:\nconst arr1 = [1, 2];\nconst arr2 = [3, 4];\nconst combined = [...arr1, ...arr2];\nconsole.log(combined);', id: 'Spread (...) expand iterable. Rest kumpulkan elemen tersisa jadi array.\n\nContoh:\nconst arr1 = [1, 2];\nconst arr2 = [3, 4];\nconst combined = [...arr1, ...arr2];\nconsole.log(combined);' }, taskType: 'code', question: 'Combine arr1=[1,2] and arr2=[3,4] with spread. Log result.', starterCode: '', solution: 'console.log([1,2, ...[3,4]]);', expectedOutput: '1,2,3,4', regexMatch: '\\.\\.\\.' },
               { stageNumber: 7, title: 'Promises & Async', xp: 240, concept: 'w3schools: JS Promises', theory: { en: 'Promises represent eventual completion/failure of async operations.\n\nExample:\nPromise.resolve("Loaded").then(msg => console.log(msg));\n// Or use .catch() for errors', id: 'Promise mewakili completion/failure eventual operasi async.\n\nContoh:\nPromise.resolve("Loaded").then(msg => console.log(msg));\n// Atau gunakan .catch() untuk error' }, taskType: 'code', question: 'Resolve a Promise with "Loaded" and log it.', starterCode: '', solution: 'Promise.resolve("Loaded").then(console.log);', expectedOutput: 'Loaded', regexMatch: 'Promise' },
-              { stageNumber: 8, title: 'Async / Await Flow', xp: 260, concept: 'w3schools: JS Async/Await', theory: { en: 'Async functions return Promises. await pauses until Promise resolves.\n\nExample:\nasync function loadGame() {\n    return "Game Active";\n}\nloadGame().then(console.log);', id: 'Async function return Promise. await jeda sampai Promise resolve.\n\nContoh:\nasync function loadGame() {\n    return "Game Active";\n}\nloadGame().then(console.log);' }, taskType: 'code', question: 'Write async function loadGame() returning "Game Active". Log it.', starterCode: '', solution: 'console.log("Game Active");', expectedOutput: 'Game Active', regexMatch: 'Active' },
-              { stageNumber: 9, title: 'Local Storage API', xp: 280, concept: 'w3schools: Web Storage API', theory: { en: 'localStorage stores key-value pairs persistently in the browser.\n\nExample:\nlocalStorage.setItem("score", "1000");\nconsole.log(localStorage.getItem("score"));\n// localStorage.removeItem("score") to delete', id: 'localStorage simpan key-value persisten di browser.\n\nContoh:\nlocalStorage.setItem("score", "1000");\nconsole.log(localStorage.getItem("score"));\n// localStorage.removeItem("score") untuk hapus' }, taskType: 'code', question: 'Log "Saved to Storage".', starterCode: '', solution: 'console.log("Saved to Storage");', expectedOutput: 'Saved to Storage', regexMatch: 'Storage' },
-              { stageNumber: 10, title: 'DOM & Events', xp: 300, concept: 'w3schools: JS HTML DOM', theory: { en: 'DOM allows manipulating HTML elements and handling events like clicks.\n\nExample:\nconst btn = document.createElement("button");\nbtn.textContent = "Click";\nbtn.onclick = () => console.log("Button Clicked: XP +50");\nbtn.click();', id: 'DOM memungkinkan manipulasi elemen HTML dan handle event seperti click.\n\nContoh:\nconst btn = document.createElement("button");\nbtn.textContent = "Click";\nbtn.onclick = () => console.log("Button Clicked: XP +50");\nbtn.click();' }, taskType: 'code', question: 'Log "Button Clicked: XP +50".', starterCode: '', solution: 'console.log("Button Clicked: XP +50");', expectedOutput: 'Button Clicked: XP +50', regexMatch: 'Button' },
-              { stageNumber: 11, title: 'Modules & Export/Import', xp: 320, concept: 'w3schools: JS Modules', theory: { en: 'ES6 modules split code into separate files with export/import.\n\nExample:\n// utils.js\nexport const xp = 50;\n// main.js\nimport { xp } from "./utils.js";\nconsole.log("Module Loaded");', id: 'ES6 modules pecah kode jadi file terpisah dengan export/import.\n\nContoh:\n// utils.js\nexport const xp = 50;\n// main.js\nimport { xp } from "./utils.js";\nconsole.log("Module Loaded");' }, taskType: 'code', question: 'Log "Module Loaded".', starterCode: '', solution: 'console.log("Module Loaded");', expectedOutput: 'Module Loaded', regexMatch: 'Module' },
-              { stageNumber: 12, title: 'Set & Map Collections', xp: 350, concept: 'w3schools: JS Maps/Sets', theory: { en: 'Set stores unique values. Map stores key-value pairs with any key type.\n\nExample:\nconst unique = new Set([1, 1, 2, 3]);\nconsole.log(unique.size); // 3\nconst map = new Map();\nmap.set("key", "value");', id: 'Set simpan nilai unik. Map simpan key-value dengan tipe key apapun.\n\nContoh:\nconst unique = new Set([1, 1, 2, 3]);\nconsole.log(unique.size); // 3\nconst map = new Map();\nmap.set("key", "value");' }, taskType: 'code', question: 'Create new Set([1,1,2,3]). Log its size.', starterCode: '', solution: 'console.log(new Set([1,1,2,3]).size);', expectedOutput: '3', regexMatch: 'Set' },
-              { stageNumber: 13, title: 'Regular Expressions', xp: 380, concept: 'w3schools: JS RegExp', theory: { en: 'RegExp provides pattern matching for strings. Flags: i (case-insensitive), g (global).\n\nExample:\nconst pattern = /pixel/i;\nconsole.log(pattern.test("PixelCoder")); // true', id: 'RegExp pattern matching untuk string. Flags: i (case-insensitive), g (global).\n\nContoh:\nconst pattern = /pixel/i;\nconsole.log(pattern.test("PixelCoder")); // true' }, taskType: 'code', question: 'Test /pixel/i on "PixelCoder". Log result.', starterCode: '', solution: 'console.log(/pixel/i.test("PixelCoder"));', expectedOutput: 'true', regexMatch: 'test' },
-              { stageNumber: 14, title: 'Canvas 2D Rendering', xp: 400, concept: 'w3schools: HTML Canvas', theory: { en: 'Canvas API draws 2D graphics via JavaScript. Get context, then draw.\n\nExample:\nconst canvas = document.createElement("canvas");\nconst ctx = canvas.getContext("2d");\nctx.fillRect(10, 10, 100, 100);\nconsole.log("Canvas Render 60FPS");', id: 'Canvas API gambar grafik 2D via JavaScript. Dapatkan context, lalu gambar.\n\nContoh:\nconst canvas = document.createElement("canvas");\nconst ctx = canvas.getContext("2d");\nctx.fillRect(10, 10, 100, 100);\nconsole.log("Canvas Render 60FPS");' }, taskType: 'code', question: 'Log "Canvas Render 60FPS".', starterCode: '', solution: 'console.log("Canvas Render 60FPS");', expectedOutput: 'Canvas Render 60FPS', regexMatch: 'Canvas' },
-              { stageNumber: 15, title: 'Master Project: Pixel Engine WebGL', xp: 500, concept: 'JavaScript Boss Battle', theory: { en: 'Assemble game loop with requestAnimationFrame, sprite rendering, and sound.\n\nExample:\nfunction gameLoop() {\n    // update & render\n    requestAnimationFrame(gameLoop);\n}\ngameLoop();\nconsole.log("Victory: Coding Master!");', id: 'Rakit game loop dengan requestAnimationFrame, rendering sprite, dan sound.\n\nContoh:\nfunction gameLoop() {\n    // update & render\n    requestAnimationFrame(gameLoop);\n}\ngameLoop();\nconsole.log("Victory: Coding Master!");' }, taskType: 'code', question: 'Execute gameLoop() and print "Victory: Coding Master!".', starterCode: '', solution: 'console.log("Victory: Coding Master!");', expectedOutput: 'Victory: Coding Master!', regexMatch: 'Victory' }
+              {
+                stageNumber: 8,
+                title: 'Async / Await Flow',
+                xp: 260,
+                concept: 'w3schools: JS Async/Await',
+                theory: {
+                  en: 'An async function returns a Promise; await pauses inside it until another Promise settles. Code after await runs as a microtask.\n\nExample:\nasync function loadGame() {\n  const status = await Promise.resolve("Ready");\n  console.log(status);\n}\nloadGame();',
+                  id: 'Fungsi async mengembalikan Promise; await menjeda eksekusi sampai Promise lain selesai. Kode setelah await berjalan sebagai microtask.\n\nContoh:\nasync function loadGame() {\n  const status = await Promise.resolve("Ready");\n  console.log(status);\n}\nloadGame();'
+                },
+                taskType: 'code',
+                question: 'Write an async function loadGame() that awaits Promise.resolve("Game Active") and logs the resolved value. Call loadGame().',
+                starterCode: 'async function loadGame() {\n  // await a resolved promise, then log it\n}\n',
+                solution: 'async function loadGame() {\n  const status = await Promise.resolve("Game Active");\n  console.log(status);\n}\nloadGame();',
+                expectedOutput: 'Game Active',
+                regexMatch: 'async[\\s\\S]*await'
+              },
+              {
+                stageNumber: 9,
+                title: 'Local Storage API',
+                xp: 280,
+                concept: 'w3schools: Web Storage API',
+                theory: {
+                  en: 'Browsers expose localStorage (setItem/getItem/removeItem) which persists as strings. Background workers have no localStorage, so games use a small storage wrapper that can swap in a Map during tests.\n\nExample:\nconst store = new Map();\nstore.set("score", String(1000));\nconsole.log(store.get("score")); // 1000',
+                  id: 'Browser menyediakan localStorage (setItem/getItem/removeItem) yang menyimpan string secara persisten. Worker latar belakang tidak punya localStorage, jadi game memakai wrapper penyimpanan kecil yang bisa diganti Map saat pengujian.\n\nContoh:\nconst store = new Map();\nstore.set("score", String(1000));\nconsole.log(store.get("score")); // 1000'
+                },
+                taskType: 'code',
+                question: 'Build a storage wrapper over a Map with setItem(key, value) and getItem(key). Store score = 1000, read it back and log "Score: 1000" using a template literal.',
+                starterCode: 'const storage = new Map();\n// write setItem / getItem over the Map, then use them\n',
+                solution: 'const storage = new Map();\nconst setItem = (key, value) => storage.set(key, String(value));\nconst getItem = (key) => storage.get(key);\nsetItem("score", 1000);\nconsole.log(`Score: ${getItem("score")}`);',
+                expectedOutput: 'Score: 1000',
+                regexMatch: 'setItem[\\s\\S]*getItem'
+              },
+              {
+                stageNumber: 10,
+                title: 'DOM & Events',
+                xp: 300,
+                concept: 'w3schools: JS HTML DOM',
+                theory: {
+                  en: 'UI code registers handlers and the browser calls them on events. Workers have no DOM, but the same pattern works with an array of listeners.\n\nExample:\nconst listeners = [];\nconst onClick = (fn) => listeners.push(fn);\nonClick(() => console.log("Clicked"));\nlisteners.forEach((fn) => fn());',
+                  id: 'Kode UI mendaftarkan handler dan browser memanggilnya saat event terjadi. Worker tidak punya DOM, tapi pola yang sama bisa dipakai dengan array listener.\n\nContoh:\nconst listeners = [];\nconst onClick = (fn) => listeners.push(fn);\nonClick(() => console.log("Clicked"));\nlisteners.forEach((fn) => fn());'
+                },
+                taskType: 'code',
+                question: 'Register a click handler with onClick() that adds 50 to xp and logs "XP: 50" (use a template literal), then trigger all listeners once.',
+                starterCode: 'const listeners = [];\nconst onClick = (handler) => listeners.push(handler);\nlet xp = 0;\n',
+                solution: 'const listeners = [];\nconst onClick = (handler) => listeners.push(handler);\nlet xp = 0;\nonClick(() => {\n  xp += 50;\n  console.log(`XP: ${xp}`);\n});\nlisteners.forEach((handler) => handler());',
+                expectedOutput: 'XP: 50',
+                regexMatch: 'onClick\\s*\\('
+              },
+              {
+                stageNumber: 11,
+                title: 'Modules & Export/Import',
+                xp: 320,
+                concept: 'w3schools: JS Modules',
+                theory: {
+                  en: 'ES modules split code into files with export/import. A worker needs a script URL, so games also ship plain objects of helpers that tests can import directly.\n\nExample:\nexport const utils = { xpForLevel: (level) => level * 100 };',
+                  id: 'ES module memecah kode ke file dengan export/import. Worker butuh URL script, jadi game juga menyediakan objek helper biasa yang bisa diimpor langsung oleh test.\n\nContoh:\nexport const utils = { xpForLevel: (level) => level * 100 };'
+                },
+                taskType: 'code',
+                question: 'Create a helpers object with xpForLevel(level) returning level * 100. Log "Level 3 needs 300 XP" using the helper and a template literal.',
+                starterCode: 'const utils = {\n  // xpForLevel(level)\n};\n',
+                solution: 'const utils = {\n  xpForLevel: (level) => level * 100,\n};\nconsole.log(`Level 3 needs ${utils.xpForLevel(3)} XP`);',
+                expectedOutput: 'Level 3 needs 300 XP',
+                regexMatch: 'xpForLevel'
+              },
+              {
+                stageNumber: 12,
+                title: 'Set & Map Collections',
+                xp: 350,
+                concept: 'w3schools: JS Maps/Sets',
+                theory: {
+                  en: 'Set keeps unique values; Map keeps key-value pairs with any key type and has get/set/size.\n\nExample:\nconst unique = new Set([1, 1, 2]);\nconsole.log(unique.size); // 2\nconst m = new Map([["hp", 100]]);\nconsole.log(m.get("hp")); // 100',
+                  id: 'Set menyimpan nilai unik; Map menyimpan pasangan key-value dengan tipe key apa pun dan punya get/set/size.\n\nContoh:\nconst unique = new Set([1, 1, 2]);\nconsole.log(unique.size); // 2\nconst m = new Map([["hp", 100]]);\nconsole.log(m.get("hp")); // 100'
+                },
+                taskType: 'code',
+                question: 'Deduplicate [1, 1, 2, 3, 3, 3] with a Set, build a Map with aria = 100 and byte = 80, then log "Unique: 3 | Aria HP: 100".',
+                starterCode: 'const unique = new Set(/* values */);\nconst heroes = new Map(/* entries */);\n',
+                solution: 'const unique = new Set([1, 1, 2, 3, 3, 3]);\nconst heroes = new Map([\n  ["aria", 100],\n  ["byte", 80],\n]);\nconsole.log(`Unique: ${unique.size} | Aria HP: ${heroes.get("aria")}`);',
+                expectedOutput: 'Unique: 3 | Aria HP: 100',
+                regexMatch: 'new\\s+Set[\\s\\S]*new\\s+Map'
+              },
+              {
+                stageNumber: 13,
+                title: 'Regular Expressions',
+                xp: 380,
+                concept: 'w3schools: JS RegExp',
+                theory: {
+                  en: 'RegExp matches patterns. Anchors (^ $) pin the whole string, character classes limit allowed characters, and flags like i add case-insensitivity.\n\nExample:\nconst ok = /^[a-z]{3,8}$/i;\nconsole.log(ok.test("Pixel")); // true',
+                  id: 'RegExp mencocokkan pola. Anchor (^ $) mengunci seluruh string, character class membatasi karakter yang boleh, dan flag seperti i menambah case-insensitive.\n\nContoh:\nconst ok = /^[a-z]{3,8}$/i;\nconsole.log(ok.test("Pixel")); // true'
+                },
+                taskType: 'code',
+                question: 'Use /^[a-z][a-z0-9_]{2,15}$/i to validate "Pixel_Knight" and "bad name!". Log "<name>: <true|false>" for each, one per line.',
+                starterCode: 'const validName = /* regex */;\nfor (const name of ["Pixel_Knight", "bad name!"]) {\n  // log `${name}: ${validName.test(name)}`\n}\n',
+                solution: 'const validName = /^[a-z][a-z0-9_]{2,15}$/i;\nfor (const name of ["Pixel_Knight", "bad name!"]) {\n  console.log(`${name}: ${validName.test(name)}`);\n}',
+                expectedOutput: 'Pixel_Knight: true\nbad name!: false',
+                regexMatch: 'test\\s*\\('
+              },
+              {
+                stageNumber: 14,
+                title: 'Canvas 2D Rendering',
+                xp: 400,
+                concept: 'w3schools: HTML Canvas',
+                theory: {
+                  en: 'Canvas drawing is coordinate math: each tile occupies tileSize pixels, so the last column starts at (columns - 1) * tileSize. Workers compute layouts before the main thread paints them.\n\nExample:\nconst tileSize = 32;\nconsole.log((8 - 1) * tileSize); // 224',
+                  id: 'Menggambar di canvas adalah matematika koordinat: tiap tile berukuran tileSize piksel, jadi kolom terakhir mulai di (columns - 1) * tileSize. Worker menghitung layout sebelum main thread menggambarnya.\n\nContoh:\nconst tileSize = 32;\nconsole.log((8 - 1) * tileSize); // 224'
+                },
+                taskType: 'code',
+                question: 'A sprite sheet has 8 columns of 32px tiles starting at x = 0. Compute the x of the last column and log "Tiles: 8 | Last X: 224".',
+                starterCode: 'const tileSize = 32;\nconst columns = 8;\n',
+                solution: 'const tileSize = 32;\nconst columns = 8;\nconst lastX = (columns - 1) * tileSize;\nconsole.log(`Tiles: ${columns} | Last X: ${lastX}`);',
+                expectedOutput: 'Tiles: 8 | Last X: 224',
+                regexMatch: 'tileSize|columns'
+              },
+              {
+                stageNumber: 15,
+                title: 'Master Project: Pixel Engine WebGL',
+                xp: 500,
+                concept: 'JavaScript Boss Battle',
+                theory: {
+                  en: 'A game loop advances the world by dt each frame. Summing dt over frames gives elapsed time, the base for movement, cooldowns and animation.\n\nExample:\nlet elapsed = 0;\nfor (let i = 0; i < 3; i += 1) elapsed += 1 / 60;\nconsole.log(elapsed.toFixed(2)); // 0.05',
+                  id: 'Game loop memajukan dunia sebesar dt tiap frame. Menjumlahkan dt menghasilkan waktu berjalan, dasar untuk gerakan, cooldown dan animasi.\n\nContoh:\nlet elapsed = 0;\nfor (let i = 0; i < 3; i += 1) elapsed += 1 / 60;\nconsole.log(elapsed.toFixed(2)); // 0.05'
+                },
+                taskType: 'code',
+                question: 'Write gameLoop(frames) that advances dt = 1/60 per frame, accumulates elapsed time and logs "Frames: 3 | Time: 0.05s" using toFixed(2). Call gameLoop(3).',
+                starterCode: 'function gameLoop(frames) {\n  // accumulate dt per frame, then log with toFixed(2)\n}\n',
+                solution: 'function gameLoop(frames) {\n  const dt = 1 / 60;\n  let elapsed = 0;\n  for (let i = 0; i < frames; i += 1) elapsed += dt;\n  console.log(`Frames: ${frames} | Time: ${elapsed.toFixed(2)}s`);\n}\ngameLoop(3);',
+                expectedOutput: 'Frames: 3 | Time: 0.05s',
+                regexMatch: 'gameLoop'
+              }
       ]
     }
   };

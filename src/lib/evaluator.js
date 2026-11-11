@@ -412,16 +412,30 @@ export async function runPython(code) {
 
 // Syllabus C++ stages after #5 ship bare snippets (no main/include). Wrap them
 // so Piston can compile them while leaving complete programs untouched.
+/** Headers auto-included when the learner uses the matching std type/function. */
+const CPP_AUTO_HEADERS = [
+  { header: 'vector', pattern: /\bstd::vector\b|\bvector\s*</ },
+  { header: 'string', pattern: /\bstd::string\b|\bstring\s+[A-Za-z_]|\bgetline\s*\(/ },
+  { header: 'map', pattern: /\bstd::map\b|\bmap\s*</ },
+  { header: 'unordered_map', pattern: /\bunordered_map\s*</ },
+  { header: 'set', pattern: /\bstd::set\b|\bset\s*</ },
+  { header: 'memory', pattern: /\b(unique_ptr|shared_ptr|make_unique|make_shared)\b/ },
+  { header: 'algorithm', pattern: /\b(sort|find|max_element|min_element|reverse)\s*\(/ },
+  { header: 'cmath', pattern: /\b(sqrt|pow|abs|floor|ceil|round)\s*\(/ },
+  { header: 'sstream', pattern: /\b(stringstream|ostringstream|istringstream)\b/ },
+];
+
 export function prepareCppSource(code) {
   const source = String(code || '');
   const hasMain = /\bint\s+main\s*\(/.test(source);
-  const hasIostream = /#include\s*<iostream>/.test(source);
   const hasUsingNamespace = /using\s+namespace\s+std\s*;/.test(source);
-  const hasVector = /std::vector|<vector>/.test(source);
+  const hasInclude = (header) => new RegExp(`#include\\s*<${header}>`).test(source);
 
   const prelude = [];
-  if (!hasIostream) prelude.push('#include <iostream>');
-  if (hasVector && !/#include\s*<vector>/.test(source)) prelude.push('#include <vector>');
+  if (!hasInclude('iostream')) prelude.push('#include <iostream>');
+  for (const { header, pattern } of CPP_AUTO_HEADERS) {
+    if (pattern.test(source) && !hasInclude(header)) prelude.push(`#include <${header}>`);
+  }
   if (!hasUsingNamespace) prelude.push('using namespace std;');
 
   const header = prelude.join('\n');

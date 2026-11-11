@@ -61,3 +61,28 @@ test('timeouts are sane and documented', () => {
   assert.equal(CPP_TIMEOUT_MS, 10000);
   assert.equal(PYTHON_TIMEOUT_MS, 20000);
 });
+
+test('prepareCppSource auto-includes the headers a snippet needs', () => {
+  const vectorSource = prepareCppSource('vector<int> v;\nv.push_back(1);\ncout << v.size();');
+  assert.match(vectorSource, /#include <vector>/);
+  assert.match(vectorSource, /#include <iostream>/);
+  assert.match(vectorSource, /using namespace std;/);
+  assert.match(vectorSource, /int main\(\)/);
+
+  const stringSource = prepareCppSource('string name = "Aria";\ncout << name;');
+  assert.match(stringSource, /#include <string>/);
+
+  const smartSource = prepareCppSource('auto p = make_unique<int>(5);\ncout << *p;');
+  assert.match(smartSource, /#include <memory>/);
+
+  const sortSource = prepareCppSource('sort(v.begin(), v.end());');
+  assert.match(sortSource, /#include <algorithm>/);
+});
+
+test('prepareCppSource never duplicates headers or wraps an existing main', () => {
+  const full = '#include <vector>\nint main() {\n  vector<int> v;\n  return 0;\n}';
+  const prepared = prepareCppSource(full);
+  assert.equal((prepared.match(/#include <vector>/g) || []).length, 1);
+  assert.equal((prepared.match(/int main\(/g) || []).length, 1);
+  assert.equal((prepared.match(/using namespace std;/g) || []).length, 1, 'namespace added exactly once');
+});
